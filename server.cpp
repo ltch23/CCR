@@ -11,11 +11,12 @@
 #include <unistd.h>
 #include <thread>
 #include <vector>
+#include <chrono>
 
-int nbites = 4;
 
 using namespace std;
 
+int nbites = 4;
 void read2(int SocketFD, char *buffer)
 {
 	int n;
@@ -88,10 +89,12 @@ int main(void){
 	vector<thread> T;
 	write(ConnectFD,"Conectado",9);
 	bzero(buffer, 256);
-	T.push_back(thread(write2, ConnectFD));
-	T.push_back(thread(read2, ConnectFD, buffer));
-	T[1].join();
-	T[0].join();
+	//changing to detach();
+	thread(write2, ConnectFD).detach();
+	thread(read2, ConnectFD,buffer).detach();
+
+	this_thread::sleep_for(chrono::seconds(100));
+
 	shutdown(SocketFD, SHUT_RDWR);
 	close(SocketFD);
 	return 0;
