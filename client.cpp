@@ -21,7 +21,9 @@ int SocketFD ;
 int n;
 char buffer[255];
 
-void fillZeros(string & st, int nroBytes){
+
+
+void fillZeros(string & st, int nroBytes){ // complete number with zeross =)
 	string aux = to_string(st.size());
 	int dif = nroBytes - int(aux.size());
 	st = aux + st;
@@ -38,19 +40,20 @@ void read2(int SocketFD, char *buffer)
 		do
 		{
 			// cout<<"Reading\n";
-			n = read(SocketFD, buffer, 4);
+			n = read(SocketFD, buffer, 4); // Reading first 4 bytes
 			string size_msg(buffer);
-			bzero(buffer, 4);
+			bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
 
-			n = read(SocketFD, buffer, 1);
+			n = read(SocketFD, buffer, 1); //reading 1 bytes
 			string action(buffer);
-			bzero(buffer, 1);
+			bzero(buffer, 1); //equal to the before
 
-			if (action == "R"){
+			if (action == "R"){ // Responsive when is Printing or Chating or error in Login
 				n = read(SocketFD, buffer, atoi(size_msg.c_str()));
 			}
 			
-			else if (action == "D"){
+			else if (action == "D"){//Responsive when is file
+				//here file
 
 			}
 
@@ -79,39 +82,43 @@ void write2(int  SocketFD)
 			 << endl;
 		cin >> op;
 
-		if (op == "P")
-		{
+		if (op == "P") {// protocolo for Print
+			
 			msg = "0000P";
 		}
 
-		else if (op == "L")
-		{
+		else if (op == "L"){//protocolo for Login
+
 			string username = "";
 			cout << "enter nickname: ";
-			// getline(cin, username);
-			cin >> username;
-			msg="L"+username;
+			cin.ignore(); 
+			getline(cin, username); // scann with spaces
+			// cin >> username;
+			msg="L"+username;  // msg final
 			fillZeros(msg,4);
 
 		}
-		else if (op == "C"){
+		else if (op == "C")	{ //protocolo for Chat
+
 			string othername="";
 			cout<<"enter nickname to chat: ";
 			cin>>othername;
-			fillZeros(othername,2);
+			fillZeros(othername,2);  
+			
 			cout<<"enter message: ";
 			cin.ignore();
-			getline(cin,msg);
+			getline(cin,msg); //scan with spaces
 			msg="C"+othername+msg;
 			fillZeros(msg,4);
 		}
-		else if (op == "E"){
+		else if (op == "E"){ // protocolo for End
 			msg = "0000E";
 		}
-		else if (op == "F"){
+		else if (op == "F"){ // protocolo for File
+		//here file
 		}
-		else{
-			cout << "error action no find\n";
+		else{ // this can be better =/
+			cout << "error action no foun, enter other\n ";
 			break;
 		}
 		write(SocketFD, msg.c_str(), msg.size());

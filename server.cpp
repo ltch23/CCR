@@ -28,7 +28,7 @@ void acceptClient(int ConnectFD);
 void write2(int ConnectFD,string prnt, string act);
 void read2(int ConnectFD, char *buffer);
 
-void fillZeros(string &st, int nroBytes){
+void fillZeros(string &st, int nroBytes){ // complete number with zeross  =)
 	string aux = to_string(st.size());
 	int dif = nroBytes - int(aux.size());
 	st = aux + st;
@@ -36,7 +36,7 @@ void fillZeros(string &st, int nroBytes){
 		st = "0" + st;
 }
 
-bool find_repeat(string st){
+bool find_nick(string st){ //find  a  nickname is equal to st
 
 	map<string, int>::iterator it;
 	for (it = clients.begin(); it != clients.end(); it++)
@@ -45,7 +45,8 @@ bool find_repeat(string st){
 		}
 	return false;
 }
-bool find_str(int id,string & st){
+
+void find_str(int id,string & st){//return nickanme found their number socket  
 
 	map<string, int>::iterator it;
 	for (it = clients.begin(); it != clients.end(); it++)
@@ -55,8 +56,8 @@ bool find_str(int id,string & st){
 }
 
 
-void read2(int ConnectFD, char *buffer)
-{
+void read2(int ConnectFD, char *buffer){
+
 	int n;
 
 	for (;;){
@@ -70,7 +71,7 @@ void read2(int ConnectFD, char *buffer)
 			string action(buffer);
 			bzero(buffer, 1);
 
-			if (action == "P"){
+			if (action == "P"){ //Protocolo for Printing
 				
 				string prnt="";
 				map<string, int>::iterator it;
@@ -78,58 +79,63 @@ void read2(int ConnectFD, char *buffer)
 					prnt+="username: "+it->first
 					+" value: " + to_string(it->second)+"\n";
 				}
-				cout<<"Print: "<<prnt<<endl;
-				write2(ConnectFD,prnt,action);
+				cout<<"Print: "<<prnt<<endl; // print has all clients 
+				write2(ConnectFD,prnt,action); 
 			}
 
-			else if (action == "L"){
+			else if (action == "L"){//protocolo for Login
 				
-				if(find_repeat(string(buffer)) == true){
+				if(find_nick(string(buffer)) == true){ // find  a new nickname is equal to other already exists
 					string err="nickname already exists, enter other\n";
 					write2(ConnectFD,err.c_str(),action);
 				}
-			= read(ConnectFD, buffer, size_txt);
+				n = read(ConnectFD, buffer, size_txt);
 
-				clienuffer] = ConnectFD;
+				clients[buffer] = ConnectFD; //adding a newclient
 				cout << "Login: " << buffer << endl;
 			}
 
-			else if (action == "C"){
+			else if (action == "C"){ //protocolo for chating
 
 				string username = "";
-				find_str(ConnectFD,username);
+				find_str(ConnectFD,username); //username has nickname who send to mssg 
 
-				n = read(ConnectFD, buffer, 2);
+				n = read(ConnectFD, buffer, 2); //reading a size of the other client
 				int size_othername=atoi(buffer);
 				bzero(buffer, 2);
 
-				n = read(ConnectFD, buffer, size_othername);
+				n = read(ConnectFD, buffer, size_othername); //reading a nickname the other client
 				string othername(buffer);
 				bzero(buffer, size_othername);
+				if(find_nick(othername)==false){ //check if othername exists
+					string err = "nickname not found, enter other\n";
+					write2(ConnectFD, err.c_str(), action);
+					break;
+				}	
 
-				int size_msg= size_txt-3-othername.size();
+				int size_msg= size_txt-3-othername.size();// size has the size the real mssg
 				// cout << "size_msg: " << size_msg<<endl;
 				n = read(ConnectFD, buffer, size_msg);
 				string msg(buffer);
 				bzero(buffer,size_msg);
 				
-				//buscando
-				int otherConnectFD = clients.find(othername)->second;
+				int otherConnectFD = clients.find(othername)->second; //finding socket number the other client for send to mssg 
 				if (otherConnectFD < 0){
 					perror("error in nickname");
 				}
 				
-				msg = username+": "+msg;
+				msg = username+": "+msg; //msg final
 				cout<<msg+" -> "+othername<<endl;
 				write2(otherConnectFD, msg, action);
 			}
-			else if (action == "E"){
+			else if (action == "E"){//protocol for End
 				cout<<"End\n";
 			}
-			else if (action == "F"){
+			else if (action == "F"){//protocol for File
+			//here file
 						
 			}
-			else
+			else // this is can be better, you can do it =)
 			cout << "error in action, msg bad\n";
 
 		} while (n == 0);
@@ -139,7 +145,7 @@ void read2(int ConnectFD, char *buffer)
 void write2(int ConnectFD, string mssg,string act)
 {
 
-	if (act == "P" or act == "C" or act == "L")
+	if (act == "P" or act == "C" or act == "L") // L is when a nickname is repeat 
 	{
 		mssg = "R" +mssg;
 		fillZeros(mssg,4);
