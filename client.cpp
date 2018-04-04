@@ -12,9 +12,7 @@
 #include <thread>
 #include <vector>
 
-using namespace std;
-
-vector<thread> T; // first,second;
+std::vector<std::thread> T; // first,second;
 struct sockaddr_in stSockAddr;
 int Res;
 int SocketFD ;
@@ -23,8 +21,8 @@ char buffer[255];
 
 
 
-void fillZeros(string & st, int nroBytes){ // complete number with zeross =)
-	string aux = to_string(st.size());
+void fillZeros(std::string & st, int nroBytes){ // complete number with zeross =)
+	std::string aux = std::to_string(st.size());
 	int dif = nroBytes - int(aux.size());
 	st = aux + st;
 	for (int i = 0; i < dif; i++)
@@ -41,11 +39,11 @@ void read2(int SocketFD, char *buffer)
 		{
 			// cout<<"Reading\n";
 			n = read(SocketFD, buffer, 4); // Reading first 4 bytes
-			string size_msg(buffer);
+			std::string size_msg(buffer);
 			bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
 
 			n = read(SocketFD, buffer, 1); //reading 1 bytes
-			string action(buffer);
+			std::string action(buffer);
 			bzero(buffer, 1); //equal to the before
 
 			if (action == "R"){ // Responsive when is Printing or Chating or error in Login
@@ -61,26 +59,26 @@ void read2(int SocketFD, char *buffer)
 
 			// n = read(SocketFD, buffer, atoi(buffer));
 		} while (n == 0);
-		cout << buffer << endl;
+		std::cout << buffer << std::endl;
 	}
 }
 
 void write2(int  SocketFD)
 {
-	string msg = "", aux = "", op = "";
+	std::string msg = "", aux = "", op = "";
 	int dif = 0;
 
 	while (1)
 	{
-		cout << "------Menu (action)-----\n"
+		std::cout << "------Menu (action)-----\n"
 			 << "P -> Print list of user on the chat \n"
 			 << "L -> Login to the char\n"
 			 << "C -> Send a msg to a user on the chat\n"
 			 << "E -> End chat or logout from chat\n"
 			 << "F -> Send a file from a user to another user\n"
 			 << "----------------------------\n"
-			 << endl;
-		cin >> op;
+			 << std::endl;
+		std::cin >> op;
 
 		if (op == "P") {// protocolo for Print
 			
@@ -89,10 +87,10 @@ void write2(int  SocketFD)
 
 		else if (op == "L"){//protocolo for Login
 
-			string username = "";
-			cout << "enter nickname: ";
-			cin.ignore(); 
-			getline(cin, username); // scann with spaces
+			std::string username = "";
+			std::cout << "enter nickname: ";
+			std::cin.ignore(); 
+			getline(std::cin, username); // scann with spaces
 			// cin >> username;
 			msg="L"+username;  // msg final
 			fillZeros(msg,4);
@@ -100,14 +98,14 @@ void write2(int  SocketFD)
 		}
 		else if (op == "C")	{ //protocolo for Chat
 
-			string othername="";
-			cout<<"enter nickname to chat: ";
-			cin>>othername;
+			std::string othername="";
+			std::cout<<"enter nickname to chat: ";
+			std::cin>>othername;
 			fillZeros(othername,2);  
 			
-			cout<<"enter message: ";
-			cin.ignore();
-			getline(cin,msg); //scan with spaces
+			std::cout<<"enter message: ";
+			std::cin.ignore();
+			getline(std::cin,msg); //scan with spaces
 			msg="C"+othername+msg;
 			fillZeros(msg,4);
 		}
@@ -118,13 +116,15 @@ void write2(int  SocketFD)
 		//here file
 		}
 		else{ // this can be better =/
-			cout << "error action no foun, enter other\n ";
+			std::cout << "error action no foun, enter other\n ";
 			break;
 		}
 		write(SocketFD, msg.c_str(), msg.size());
+		if(op=="E"){
+			return;
+		}
 	}
 
-	// cout << "sali de write" << endl;
 }
 
 int main(){
@@ -141,7 +141,7 @@ int main(){
 
 	stSockAddr.sin_family = AF_INET;
 	stSockAddr.sin_port = htons(1100);
-	Res = inet_pton(AF_INET, "192.168.0.6", &stSockAddr.sin_addr);
+	Res = inet_pton(AF_INET, "10.0.1.4", &stSockAddr.sin_addr);
 
 	if (0 > Res)
 	{
@@ -164,9 +164,9 @@ int main(){
 	}
 	n = read(SocketFD, buffer, 9);
 	printf("%s\n", buffer);
-	T.push_back(thread(read2, SocketFD, buffer));
-	T.push_back(thread(write2, SocketFD));
-	T[0].join();
+	T.push_back(std::thread(read2, SocketFD, buffer));
+	T.push_back(std::thread(write2, SocketFD));
+	//T[0].join();
 	T[1].join();
 
 	shutdown(SocketFD, SHUT_RDWR);
