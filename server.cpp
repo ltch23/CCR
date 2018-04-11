@@ -183,7 +183,7 @@ void read2(int ConnectFD){
 				n = read(ConnectFD, buffer, size_file);
 				std::string msg_file(buffer);
 				if(find_nick(othername)==false){ //check if othername exists
-					std::cout << "PASE" << std::endl;
+					//std::cout << "PASE" << std::endl;
 					std::string err = "nickname not found, enter other\n";
 					write2(ConnectFD, err.c_str(), action);
 					continue;
@@ -214,13 +214,11 @@ bool write2(int ConnectFD, std::string mssg, std::string act){
 
 	if (act == "P" or act == "C" or act == "L" or act == "F") { // L is when a nickname is repeat 
 		mssg = fillZeros(mssg.size(),4)+"R" +mssg;
-		
-		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());
-		std::cout << nwrite << "\n";
+		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
 		return true;
 	} else if (act=="D"){
-		int nwrite= write(ConnectFD, mssg.c_str(),mssg.size());
-		std::cout << nwrite << "\n";
+		int nwrite= write(ConnectFD, mssg.c_str(),mssg.size());//std::cout << nwrite << "\n";
+		return true;
 	}
 	return false;
 }
