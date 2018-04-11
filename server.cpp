@@ -18,16 +18,17 @@
 int nbites_4 = 4;
 struct sockaddr_in stSockAddr;
 int SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-char buffer[256];
 int n;
 std::map<std::string,int> clients;
 
 void acceptClient(int ConnectFD);
 void write2(int ConnectFD,std::string prnt, std::string act);
-void read2(int ConnectFD, char *buffer);
+void read2(int ConnectFD);
 
 void fillZeros(std::string &st, int nroBytes){ // complete number with zeross  =)
-	std::string aux = std::to_string(st.size());
+	std::string aux = std::to_string(st.size()-1);
+	std::cout << st << std::endl;
+	std::cout << aux << std::endl;
 	int dif = nroBytes - int(aux.size());
 	st = aux + st;
 	for (int i = 0; i < dif; i++)
@@ -54,7 +55,8 @@ void find_str(int id,std::string & st){//return nickanme found their number sock
 }
 
 
-void read2(int ConnectFD, char *buffer){
+void read2(int ConnectFD){
+	char buffer[256];
 
 	int n;
 
@@ -79,9 +81,7 @@ void read2(int ConnectFD, char *buffer){
 				}
 				std::cout<<"Print: "<<prnt<<std::endl; // print has all clients 
 				write2(ConnectFD,prnt,action); 
-			}
-
-			else if (action == "L"){//protocolo for Login
+			} else if (action == "L"){//protocolo for Login
 				
 				if(find_nick(std::string(buffer)) == true){ // find  a new nickname is equal to other already exists
 					std::string err="nickname already exists, enter other\n";
@@ -91,10 +91,7 @@ void read2(int ConnectFD, char *buffer){
 
 				clients[buffer] = ConnectFD; //adding a newclient
 				std::cout << "Login: " << buffer << std::endl;
-			}
-
-			else if (action == "C"){ //protocolo for chating
-
+			} else if (action == "C"){ //protocolo for chating
 				std::string username = "";
 				find_str(ConnectFD,username); //username has nickname who send to mssg 
 
@@ -125,9 +122,9 @@ void read2(int ConnectFD, char *buffer){
 				msg = username+": "+msg; //msg final
 				std::cout<<msg+" -> "+othername<<std::endl;
 				write2(otherConnectFD, msg, action);
-			}
-			else if (action == "E"){//protocol for End
-				std::cout<<"End\n";
+			} else if (action == "E"){//protocol for End
+				//std::string username = "";
+				//find_str(ConnectFD,username); //username has nickname who send to mssg 
 				std::vector<std::string> V;
 				for (auto it=clients.begin();it!=clients.end();it++){
 					if(it->second==ConnectFD){
@@ -137,46 +134,44 @@ void read2(int ConnectFD, char *buffer){
 				for (int i=0;i<V.size();i++){
 					clients.erase(V[i]);
 				}
-				write2(ConnectFD,"Te has retirado del chat\nYa no te podran enviar mensajes","C");
+				write2(ConnectFD,"","C");
+				std::cout << "Respondiendo Salida" <<  std::endl;
 				close(ConnectFD);
 				return;
-			}
-			else if (action == "F"){//protocol for File
+			} else if (action == "F"){//protocol for File
 			//here file
 						
+			} else {// this is can be better, you can do it =)
+				std::cout << "error in action, msg bad\n";
 			}
-			else // this is can be better, you can do it =)
-			std::cout << "error in action, msg bad\n";
 
 		} while (n == 0);
 		// printf("client: %s\n", buffer);
 	}
 }
 
-void write2(int ConnectFD, std::string mssg, std::string act)
-{
+void write2(int ConnectFD, std::string mssg, std::string act){
 
-	if (act == "P" or act == "C" or act == "L") // L is when a nickname is repeat 
-	{
+	if (act == "P" or act == "C" or act == "L") { // L is when a nickname is repeat 
 		mssg = "R" +mssg;
 		fillZeros(mssg,4);
+		
+		std::cout << "Enviando mns" << mssg << "\n" ;
 		write(ConnectFD, mssg.c_str(), mssg.size());
 	}
 
 }
-void acceptClient(int ConnectFD)
-{
-	if (0 > ConnectFD)
-	{
+
+void acceptClient(int ConnectFD) {
+	if (0 > ConnectFD) {
 		perror("error accept failed");
 		close(SocketFD);
 		exit(EXIT_FAILURE);
 	}
 
 	write(ConnectFD, "Conectado", 9);
-	bzero(buffer, 256);
 	//changing to detach();
-	std::thread(read2, ConnectFD,buffer).detach();
+	std::thread(read2, ConnectFD).detach();
 
 	std::this_thread::sleep_for(std::chrono::seconds(100));
 }

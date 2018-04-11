@@ -19,8 +19,6 @@ int SocketFD ;
 int n;
 char buffer[255];
 
-
-
 void fillZeros(std::string & st, int nroBytes){ // complete number with zeross =)
 	std::string aux = std::to_string(st.size());
 	int dif = nroBytes - int(aux.size());
@@ -48,6 +46,9 @@ void read2(int SocketFD, char *buffer)
 
 			if (action == "R"){ // Responsive when is Printing or Chating or error in Login
 				n = read(SocketFD, buffer, atoi(size_msg.c_str()));
+				if(std::string(buffer)==""){
+					return;
+				}
 			}
 			
 			else if (action == "D"){//Responsive when is file
@@ -55,11 +56,9 @@ void read2(int SocketFD, char *buffer)
 
 			}
 
-			
-
 			// n = read(SocketFD, buffer, atoi(buffer));
+			
 		} while (n == 0);
-		std::cout << buffer << std::endl;
 	}
 }
 
@@ -113,14 +112,16 @@ void write2(int  SocketFD)
 			msg = "0000E";
 		}
 		else if (op == "F"){ // protocolo for File
+			msg = "0000P";
 		//here file
 		}
 		else{ // this can be better =/
-			std::cout << "error action no foun, enter other\n ";
-			break;
+			continue;
+			std::cout << "error action no found, enter other\n ";
 		}
 		write(SocketFD, msg.c_str(), msg.size());
 		if(op=="E"){
+			std::cout << "End of Write\n";
 			return;
 		}
 	}
@@ -141,7 +142,7 @@ int main(){
 
 	stSockAddr.sin_family = AF_INET;
 	stSockAddr.sin_port = htons(1100);
-	Res = inet_pton(AF_INET, "10.0.1.4", &stSockAddr.sin_addr);
+	Res = inet_pton(AF_INET, "192.168.161.253", &stSockAddr.sin_addr);
 
 	if (0 > Res)
 	{
@@ -166,7 +167,7 @@ int main(){
 	printf("%s\n", buffer);
 	T.push_back(std::thread(read2, SocketFD, buffer));
 	T.push_back(std::thread(write2, SocketFD));
-	//T[0].join();
+	T[0].join();
 	T[1].join();
 
 	shutdown(SocketFD, SHUT_RDWR);
