@@ -14,25 +14,33 @@
 #include <map>
 #include <chrono>
 
+/*VARIABLES Y FUNCIONES*/
 
-int nbites_4 = 4;
 struct sockaddr_in stSockAddr;
-int SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-int n;
+int SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),n;
 std::map<std::string,int> clients;
 
 void acceptClient(int ConnectFD);
-void write2(int ConnectFD,std::string prnt, std::string act);
+bool write2(int ConnectFD,std::string prnt, std::string act);
 void read2(int ConnectFD);
+std::string fillZeros(int aux_size, int nroBytes );
 
-void fillZeros(std::string &st, int nroBytes){ // complete number with zeross  =)
-	std::string aux = std::to_string(st.size()-1);
-	std::cout << st << std::endl;
-	std::cout << aux << std::endl;
+/***********************/
+
+void fillZeros(std::string &st, int nroBytes, bool with_act=1){ // complete number with zeross  =)
+	std::string aux = std::to_string(st.size()-with_act);
 	int dif = nroBytes - int(aux.size());
 	st = aux + st;
 	for (int i = 0; i < dif; i++)
 		st = "0" + st;
+}
+
+std::string fillZeros(int aux_size, int nroBytes ){ // complete number with zeross  =)
+	std::string aux=std::to_string(aux_size);
+	int dif = nroBytes - int(aux.size());
+	for (int i = 0; i < dif; i++)
+		aux = "0" + aux;
+	return aux;
 }
 
 bool find_nick(std::string st){ //find  a  nickname is equal to st
@@ -64,6 +72,20 @@ void read2(int ConnectFD){
 		bzero(buffer, 255);
 		do{
 			n = read(ConnectFD, buffer, 4);
+			if(n==0){
+				std::vector<std::string> V;
+				for (auto it=clients.begin();it!=clients.end();it++){
+					if(it->second==ConnectFD){
+						V.push_back(it->first);
+					}
+				}
+				for (int i=0;i<V.size();i++){
+					clients.erase(V[i]);
+				}
+				close(ConnectFD);
+				return;
+			}
+			std::string sendFile(buffer);
 			int size_txt=atoi(buffer);
 			bzero(buffer, 4);
 
@@ -79,15 +101,16 @@ void read2(int ConnectFD){
 					prnt+="username: "+it->first
 					+" value: " + std::to_string(it->second)+"\n";
 				}
-				std::cout<<"Print: "<<prnt<<std::endl; // print has all clients 
+				std::cout<<"Print:\n"<<prnt<<std::endl; // print has all clients 
 				write2(ConnectFD,prnt,action); 
 			} else if (action == "L"){//protocolo for Login
 				
+				n = read(ConnectFD, buffer, size_txt);
 				if(find_nick(std::string(buffer)) == true){ // find  a new nickname is equal to other already exists
 					std::string err="nickname already exists, enter other\n";
 					write2(ConnectFD,err.c_str(),action);
+					continue;
 				}
-				n = read(ConnectFD, buffer, size_txt);
 
 				clients[buffer] = ConnectFD; //adding a newclient
 				std::cout << "Login: " << buffer << std::endl;
@@ -102,17 +125,17 @@ void read2(int ConnectFD){
 				n = read(ConnectFD, buffer, size_othername); //reading a nickname the other client
 				std::string othername(buffer);
 				bzero(buffer, size_othername);
-				if(find_nick(othername)==false){ //check if othername exists
-					std::string err = "nickname not found, enter other\n";
-					write2(ConnectFD, err.c_str(), action);
-					break;
-				}	
 
-				int size_msg= size_txt-3-othername.size();// size has the size the real mssg
+				int size_msg= size_txt;// size has the size the real mssg
 				// cout << "size_msg: " << size_msg<<endl;
 				n = read(ConnectFD, buffer, size_msg);
 				std::string msg(buffer);
 				bzero(buffer,size_msg);
+				if(find_nick(othername)==false){ //check if othername exists
+					std::string err = "nickname not found, enter other\n";
+					write2(ConnectFD, err.c_str(), action);
+					continue;
+				}	
 				
 				int otherConnectFD = clients.find(othername)->second; //finding socket number the other client for send to mssg 
 				if (otherConnectFD < 0){
@@ -123,8 +146,6 @@ void read2(int ConnectFD){
 				std::cout<<msg+" -> "+othername<<std::endl;
 				write2(otherConnectFD, msg, action);
 			} else if (action == "E"){//protocol for End
-				//std::string username = "";
-				//find_str(ConnectFD,username); //username has nickname who send to mssg 
 				std::vector<std::string> V;
 				for (auto it=clients.begin();it!=clients.end();it++){
 					if(it->second==ConnectFD){
@@ -134,11 +155,50 @@ void read2(int ConnectFD){
 				for (int i=0;i<V.size();i++){
 					clients.erase(V[i]);
 				}
-				write2(ConnectFD,"","C");
-				std::cout << "Respondiendo Salida" <<  std::endl;
+				//write2(ConnectFD,"","C");
+				//std::cout << "Respondiendo Salida" <<  std::endl;
 				close(ConnectFD);
 				return;
 			} else if (action == "F"){//protocol for File
+				sendFile+="D";
+				std::string username = "";
+				find_str(ConnectFD,username); //username has nickname who send to mssg 
+				n = read(ConnectFD, buffer, 2); //reading a size of the other client
+				int size_othername=atoi(buffer);
+				bzero(buffer, 2);
+
+				n = read(ConnectFD, buffer, size_othername); //reading a nickname the other client
+				std::string othername(buffer);
+				bzero(buffer, size_othername);
+
+				int size_msg= size_txt;// size has the size the real mssg
+				//std:: cout << "size_msg: " << size_msg << std::endl;
+				n = read(ConnectFD, buffer, size_msg);
+				std::string msg(buffer);
+				bzero(buffer,size_msg);
+				n = read(ConnectFD, buffer, 4);
+				std::string str_size_file(buffer);
+				int size_file=atoi(buffer);
+				bzero(buffer,4);
+				n = read(ConnectFD, buffer, size_file);
+				std::string msg_file(buffer);
+				if(find_nick(othername)==false){ //check if othername exists
+					std::cout << "PASE" << std::endl;
+					std::string err = "nickname not found, enter other\n";
+					write2(ConnectFD, err.c_str(), action);
+					continue;
+				}	
+				bzero(buffer,size_file);
+				fillZeros(username,2,0);
+				sendFile+=username+msg+str_size_file+msg_file;
+				int otherConnectFD = clients.find(othername)->second; //finding socket number the other client for send to mssg 
+				if (otherConnectFD < 0){
+					perror("error in nickname");
+				}
+				
+				std::cout<<sendFile << " -> "+othername<<std::endl;
+				write2(otherConnectFD, sendFile, "D");
+				
 			//here file
 						
 			} else {// this is can be better, you can do it =)
@@ -150,16 +210,19 @@ void read2(int ConnectFD){
 	}
 }
 
-void write2(int ConnectFD, std::string mssg, std::string act){
+bool write2(int ConnectFD, std::string mssg, std::string act){
 
-	if (act == "P" or act == "C" or act == "L") { // L is when a nickname is repeat 
-		mssg = "R" +mssg;
-		fillZeros(mssg,4);
+	if (act == "P" or act == "C" or act == "L" or act == "F") { // L is when a nickname is repeat 
+		mssg = fillZeros(mssg.size(),4)+"R" +mssg;
 		
-		std::cout << "Enviando mns" << mssg << "\n" ;
-		write(ConnectFD, mssg.c_str(), mssg.size());
+		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());
+		std::cout << nwrite << "\n";
+		return true;
+	} else if (act=="D"){
+		int nwrite= write(ConnectFD, mssg.c_str(),mssg.size());
+		std::cout << nwrite << "\n";
 	}
-
+	return false;
 }
 
 void acceptClient(int ConnectFD) {
@@ -186,7 +249,7 @@ int main(void){
 	memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
 	stSockAddr.sin_family = AF_INET;
-	stSockAddr.sin_port = htons(1100);
+	stSockAddr.sin_port = htons(1101);
 	stSockAddr.sin_addr.s_addr = INADDR_ANY;
 
 	if(-1 == bind(SocketFD,(const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in))){
