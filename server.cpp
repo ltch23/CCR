@@ -257,7 +257,7 @@ void acceptClient(int ConnectFD) {
 	}
 
 	//changing to detach();
-	write2(ConnectFD,"Bienvenido al Chat 0.0.3 Beta\n","C");
+	write2(ConnectFD,"Bienvenido al Chat 0.0.3 Beta","C");
 	std::thread(read2, ConnectFD).detach();
 	std::this_thread::sleep_for(std::chrono::seconds(100));
 }

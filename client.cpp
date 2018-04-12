@@ -17,7 +17,7 @@ std::vector<std::thread> T; //
 struct sockaddr_in stSockAddr; //
 int Res; //
 int SocketFD ; //
-char buffer[255]; //
+char buffer[5]; //
 
 std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross =)
 	std::string aux = std::to_string(aux_size);
@@ -29,11 +29,9 @@ std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross
 
 void read2(int SocketFD, char *buffer) {
 	int n;
-	for (;;)
-	{
+	for (;;){
 		bzero(buffer, 100);
-		do
-		{
+		do {
 			n = read(SocketFD, buffer, 4); // Reading first 4 bytes
 			if(n==0 /*&& T[1].joinable()==false*/){//FINALIZANDO CONEXION
 				return;
@@ -46,12 +44,10 @@ void read2(int SocketFD, char *buffer) {
 			bzero(buffer, 1); //equal to the before
 
 			if (action == "R"){ // Responsive when is Printing or Chating or error in Login
-				n = read(SocketFD, buffer, size_msg);
-				printf ("%s\n", buffer);
-				bzero(buffer,size_msg);
-				/*if(std::string(buffer)==""){
-					return;
-				}*/
+				char msg[size_msg+1];
+				n = read(SocketFD, msg, size_msg);
+				msg[size_msg]=0;
+				printf ("[%s]\n", msg);
 			} else if (action == "D"){//Responsive when is file
 				n=read(SocketFD, buffer,2);
 				int size_othername=atoi(buffer);
@@ -59,19 +55,15 @@ void read2(int SocketFD, char *buffer) {
 				n=read(SocketFD,buffer,size_othername);
 				std::string othername(buffer);	//othername
 				bzero(buffer, size_othername);
-				//size_msg= size_txt;
 				n=read(SocketFD,buffer,size_msg);
 				std::string msg(buffer);	//filename
 				bzero(buffer,size_msg);
 				n=read(SocketFD, buffer, 4);
-				//std::string str_size_file(buffer);
 				int size_file=atoi(buffer);
 				bzero(buffer,4);
 				std::cout << othername << " te envió: " << msg << std::endl; 
 				char msg_file[size_file];
-				std::cout << "Descargando Archivo" << std::endl;
 				n=read(SocketFD,msg_file,size_file);
-				std::cout << "Archivo Descargado" << std::endl;
 				FILE *newFile=fopen(msg.c_str(),"w");
 				for (int i=0;i<size_file;i++){
 					fprintf(newFile, "%c", msg_file[i]);
@@ -83,6 +75,22 @@ void read2(int SocketFD, char *buffer) {
 			
 		} while (n == 0);
 	}
+}
+
+bool existContent(std::string &filename, std::string &file){
+	FILE *file_content;
+	if(!(file_content=fopen(filename.c_str(),"r+"))){
+		std::cout << "the file does not exist\n" << std::endl;
+		return false;
+	}
+	char c;
+	fscanf(file_content,"%c",&c);
+	while(!feof(file_content)){
+		file+=c;
+		fscanf(file_content,"%c",&c);
+	}
+	fclose(file_content);
+	return true;
 }
 
 void write2(int  SocketFD) {
@@ -102,9 +110,10 @@ void write2(int  SocketFD) {
 		std::cin >> op;
 
 		if (op == "P") {// protocolo for Print
+
 			//Protocolo:	
 			msg = 	std::string("0000")+	// size of msg
-				"P";	// P
+				"P";			// P
 
 		} else if (op == "L"){//protocolo for Login
 
@@ -132,54 +141,44 @@ void write2(int  SocketFD) {
 				fillZeros(nickname.size(),2)+	// nickname size(2)
 				nickname+			// nickname
 				msg;				// msg
-			std::cout << msg << std::endl;
 
 		} else if (op == "E"){ // protocolo for End
+
 			//Protocolo:
 			msg = 	std::string("0000") +		// size of msg(4)
 				"E";				// E
-		}
-		else if (op == "F"){ // protocolo for File
+
+		} else if (op == "F"){ // protocolo for File
+
 			std::string file="",filename="",nickname="";
 			std::cout << "enter nickname to send file: ";
 			std::cin.ignore(); 
 			getline(std::cin, nickname); // scann with spaces
 			std::cout << "enter filename: ";
 			getline(std::cin, filename); // scann with spaces
-			if(FILE *file_content=fopen(filename.c_str(),"r+")){
-				char c;
-				fscanf(file_content,"%c",&c);
-				while(!feof(file_content)){
-					file+=c;
-					fscanf(file_content,"%c",&c);
-				}
-				fclose(file_content);
-				//Protocolo:
-				if(file.size()>9999){
-					std::cout << "Es muy grande el archivo" << std:: endl;
-					continue;
-				} else {
-					msg=	fillZeros(filename.size(),4) +	// size of filename(4)
-						"F" +				// F
-						fillZeros(nickname.size(),2) +	// nickname size(2)
-						nickname +			// nickaname
-						filename +			// filename
-						fillZeros(file.size(),4) +	// file's size(4)
-						file;				// file
-				}
-			} else {
-				std::cout << "No existe el archivo" << std::endl;
+			if(!existContent(filename,file)){
 				continue;
 			}
-		}
-		else{ // this can be better =/
-			msg = "0000P";std::cout << "error action no found, enter other\n ";
+			if(file.size()>9999){
+				std::cout << "the file is very large(>9999)\n";
+				continue;
+			}
+			//Protocolo:
+			msg=	fillZeros(filename.size(),4) +	// size of filename(4)
+				"F" +				// F
+				fillZeros(nickname.size(),2) +	// nickname size(2)
+				nickname +			// nickaname
+				filename +			// filename
+				fillZeros(file.size(),4) +	// file's size(4)
+				file;				// file
+		} else{ // this can be better =/
+			msg = "0000P";
+			std::cout << "error action no found, enter other\n ";
 			continue;
 		}
 		std::cout << msg.size() <<std::endl;
 		int nwrite = write(SocketFD, msg.c_str(), msg.size());
 		if(op=="E"){
-			std::cout << "End of Write\n";
 			return;
 		}
 	}
@@ -219,10 +218,13 @@ int main(){
 	T.resize(2);
 	T[0]=(std::thread(read2, SocketFD, buffer));
 	T[1]=(std::thread(write2, SocketFD));
-	T[1].join();
+	//T[1].join();
 	T[0].join();
-
 	shutdown(SocketFD, SHUT_RDWR);
 	close(SocketFD);
+	if(T[1].joinable()){
+		perror("server is close");
+		exit(EXIT_FAILURE);
+	}
 	return 0;
 }
