@@ -67,6 +67,7 @@ void read2(int ConnectFD){
 	char buffer[256];
 
 	int n;
+	bool login=false;
 
 	for (;;){
 		bzero(buffer, 255);
@@ -102,8 +103,14 @@ void read2(int ConnectFD){
 					+" value: " + std::to_string(it->second)+"\n";
 				}
 				std::cout<<"Print:\n"<<prnt<<std::endl; // print has all clients 
+				if(login){
 				write2(ConnectFD,prnt,action); 
+				} else {
+					prnt="no estas logueado\n";
+					write2(ConnectFD,prnt,action); 
+				}
 			} else if (action == "L"){//protocolo for Login
+				login=true;
 				
 				n = read(ConnectFD, buffer, size_txt);
 				if(find_nick(std::string(buffer)) == true){ // find  a new nickname is equal to other already exists
@@ -144,7 +151,12 @@ void read2(int ConnectFD){
 				
 				msg = username+": "+msg; //msg final
 				std::cout<<msg+" -> "+othername<<std::endl;
+				if(login){
 				write2(otherConnectFD, msg, action);
+				} else {
+					msg="no estas conectado\n";
+					write2(otherConnectFD, msg, action);
+				}
 			} else if (action == "E"){//protocol for End
 				std::vector<std::string> V;
 				for (auto it=clients.begin();it!=clients.end();it++){
@@ -161,43 +173,57 @@ void read2(int ConnectFD){
 				return;
 			} else if (action == "F"){//protocol for File
 				sendFile+="D";
+				std::cout << sendFile << "\n";
 				std::string username = "";
 				find_str(ConnectFD,username); //username has nickname who send to mssg 
+
 				n = read(ConnectFD, buffer, 2); //reading a size of the other client
+				std:: cout << std::string(buffer) << "\n";
 				int size_othername=atoi(buffer);
 				bzero(buffer, 2);
 
 				n = read(ConnectFD, buffer, size_othername); //reading a nickname the other client
 				std::string othername(buffer);
+				std:: cout << std::string(buffer) << "\n";
 				bzero(buffer, size_othername);
-
 				int size_msg= size_txt;// size has the size the real mssg
-				//std:: cout << "size_msg: " << size_msg << std::endl;
+
 				n = read(ConnectFD, buffer, size_msg);
 				std::string msg(buffer);
+				std::cout << msg << "\n";
 				bzero(buffer,size_msg);
 				n = read(ConnectFD, buffer, 4);
 				std::string str_size_file(buffer);
+				std::cout << str_size_file << "\n";
 				int size_file=atoi(buffer);
 				bzero(buffer,4);
-				n = read(ConnectFD, buffer, size_file);
-				std::string msg_file(buffer);
+				char msg_file[size_file];
+				for (int i=0;i<size_file;i++){
+					n=read(ConnectFD,buffer,1);
+					msg_file[i]=buffer[0];
+					bzero(buffer,1);
+				}
 				if(find_nick(othername)==false){ //check if othername exists
 					//std::cout << "PASE" << std::endl;
 					std::string err = "nickname not found, enter other\n";
 					write2(ConnectFD, err.c_str(), action);
 					continue;
 				}	
-				bzero(buffer,size_file);
-				fillZeros(username,2,0);
-				sendFile+=username+msg+str_size_file+msg_file;
+				sendFile+=fillZeros(username.size(),2)+username+msg+str_size_file;
+				std::cout << sendFile << std::endl;
 				int otherConnectFD = clients.find(othername)->second; //finding socket number the other client for send to mssg 
 				if (otherConnectFD < 0){
 					perror("error in nickname");
+					continue;
 				}
-				
-				std::cout<<sendFile << " -> "+othername<<std::endl;
-				write2(otherConnectFD, sendFile, "D");
+				std::cout<< msg << " -> "+othername<<std::endl;
+				if(login){
+					write2(otherConnectFD, sendFile, "D");
+					write(otherConnectFD,msg_file,size_file);
+				} else {
+					sendFile="no estas logueado\n";
+					write2(otherConnectFD, sendFile, "C");
+				}
 				
 			//here file
 						
@@ -230,10 +256,9 @@ void acceptClient(int ConnectFD) {
 		exit(EXIT_FAILURE);
 	}
 
-	write(ConnectFD, "Conectado", 9);
 	//changing to detach();
+	write2(ConnectFD,"Bienvenido al Chat 0.0.3 Beta\n","C");
 	std::thread(read2, ConnectFD).detach();
-
 	std::this_thread::sleep_for(std::chrono::seconds(100));
 }
 
@@ -247,7 +272,7 @@ int main(void){
 	memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
 	stSockAddr.sin_family = AF_INET;
-	stSockAddr.sin_port = htons(1101);
+	stSockAddr.sin_port = htons(1100);
 	stSockAddr.sin_addr.s_addr = INADDR_ANY;
 
 	if(-1 == bind(SocketFD,(const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in))){

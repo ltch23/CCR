@@ -11,24 +11,13 @@
 #include <unistd.h>
 #include <thread>
 #include <vector>
-//#include <conio.h>
 #include <errno.h>
-//#include <io.h>
 
-std::vector<std::thread> T; // first,second;
-struct sockaddr_in stSockAddr;
-int Res;
-int SocketFD ;
-int n;
-char buffer[255];
-
-void fillZeros(std::string & st, int nroBytes,bool with_act=1){ // complete number with zeross =)
-	std::string aux = std::to_string(st.size()-with_act);
-	int dif = nroBytes - int(aux.size());
-	st = aux + st;
-	for (int i = 0; i < dif; i++)
-		st = "0" + st;
-}
+std::vector<std::thread> T; //
+struct sockaddr_in stSockAddr; //
+int Res; //
+int SocketFD ; //
+char buffer[255]; //
 
 std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross =)
 	std::string aux = std::to_string(aux_size);
@@ -38,8 +27,7 @@ std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross
 	return aux;
 }
 
-void read2(int SocketFD, char *buffer)
-{
+void read2(int SocketFD, char *buffer) {
 	int n;
 	for (;;)
 	{
@@ -47,7 +35,7 @@ void read2(int SocketFD, char *buffer)
 		do
 		{
 			n = read(SocketFD, buffer, 4); // Reading first 4 bytes
-			if(n==0 && T[1].joinable()==false){//FINALIZANDO CONEXION
+			if(n==0 /*&& T[1].joinable()==false*/){//FINALIZANDO CONEXION
 				return;
 			}
 			int size_msg=atoi(buffer);
@@ -79,14 +67,15 @@ void read2(int SocketFD, char *buffer)
 				//std::string str_size_file(buffer);
 				int size_file=atoi(buffer);
 				bzero(buffer,4);
-				n=read(SocketFD, buffer,size_file);
-				std::string msg_file(buffer);	//msg_file
-				bzero(buffer,size_file);
+				std::cout << othername << " te envió: " << msg << std::endl; 
+				char msg_file[size_file];
+				std::cout << "Descargando Archivo" << std::endl;
+				n=read(SocketFD,msg_file,size_file);
+				std::cout << "Archivo Descargado" << std::endl;
 				FILE *newFile=fopen(msg.c_str(),"w");
-				for (int i=0;i<msg_file.size();i++){
+				for (int i=0;i<size_file;i++){
 					fprintf(newFile, "%c", msg_file[i]);
 				}
-				std::cout << othername << " te envió: " << msg << std::endl; 
 				fclose(newFile);
 			}
 
@@ -97,11 +86,11 @@ void read2(int SocketFD, char *buffer)
 }
 
 void write2(int  SocketFD) {
-	std::string msg = "", aux = "", op = "";
+	std::string msg , aux = "", op = "";
 	int dif = 0;
 
-	while (1)
-	{
+	while (1) {
+		msg="";
 		std::cout << "------Menu (action)-----\n"
 			 << "P -> Print list of user on the chat \n"
 			 << "L -> Login to the char\n"
@@ -147,7 +136,7 @@ void write2(int  SocketFD) {
 
 		} else if (op == "E"){ // protocolo for End
 			//Protocolo:
-			msg = 	std::string("0000") +			// size of msg(4)
+			msg = 	std::string("0000") +		// size of msg(4)
 				"E";				// E
 		}
 		else if (op == "F"){ // protocolo for File
@@ -159,19 +148,25 @@ void write2(int  SocketFD) {
 			getline(std::cin, filename); // scann with spaces
 			if(FILE *file_content=fopen(filename.c_str(),"r+")){
 				char c;
+				fscanf(file_content,"%c",&c);
 				while(!feof(file_content)){
-					fscanf(file_content,"%c",&c);
 					file+=c;
+					fscanf(file_content,"%c",&c);
 				}
 				fclose(file_content);
 				//Protocolo:
-				msg=	fillZeros(filename.size(),4) +	// size of filename(4)
-					"F" +				// F
-					fillZeros(nickname.size(),2) +	// nickname size(2)
-					nickname +			// nickaname
-					filename +			// filename
-					fillZeros(file.size(),4) +	// file's size(4)
-					file;				// file
+				if(file.size()>9999){
+					std::cout << "Es muy grande el archivo" << std:: endl;
+					continue;
+				} else {
+					msg=	fillZeros(filename.size(),4) +	// size of filename(4)
+						"F" +				// F
+						fillZeros(nickname.size(),2) +	// nickname size(2)
+						nickname +			// nickaname
+						filename +			// filename
+						fillZeros(file.size(),4) +	// file's size(4)
+						file;				// file
+				}
 			} else {
 				std::cout << "No existe el archivo" << std::endl;
 				continue;
@@ -181,7 +176,7 @@ void write2(int  SocketFD) {
 			msg = "0000P";std::cout << "error action no found, enter other\n ";
 			continue;
 		}
-		//std::cout << msg <<std::endl;
+		std::cout << msg.size() <<std::endl;
 		int nwrite = write(SocketFD, msg.c_str(), msg.size());
 		if(op=="E"){
 			std::cout << "End of Write\n";
@@ -192,6 +187,7 @@ void write2(int  SocketFD) {
 }
 
 int main(){
+	int n;
 	
 	SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -204,30 +200,22 @@ int main(){
 	memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
 	stSockAddr.sin_family = AF_INET;
-	stSockAddr.sin_port = htons(1101);
-	Res = inet_pton(AF_INET, "192.168.160.240", &stSockAddr.sin_addr);
+	stSockAddr.sin_port = htons(1100);
+	Res = inet_pton(AF_INET, "10.0.1.11", &stSockAddr.sin_addr);
 
-	if (0 > Res)
-	{
+	if (0 > Res) {
 		perror("error: first parameter is not a valid address family");
 		close(SocketFD);
 		exit(EXIT_FAILURE);
-	}
-	else if (0 == Res)
-	{
+	} else if (0 == Res) {
 		perror("char string (second parameter does not contain valid ipaddress");
 		close(SocketFD);
 		exit(EXIT_FAILURE);
-	}
-
-	if (-1 == connect(SocketFD, (const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in)))
-	{
+	} if (-1 == connect(SocketFD, (const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in))) {
 		perror("connect failed");
 		close(SocketFD);
 		exit(EXIT_FAILURE);
 	}
-	n = read(SocketFD, buffer, 9);
-	printf("%s\n", buffer);
 	T.resize(2);
 	T[0]=(std::thread(read2, SocketFD, buffer));
 	T[1]=(std::thread(write2, SocketFD));
