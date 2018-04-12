@@ -100,13 +100,13 @@ void read2(int ConnectFD){
 				std::map<std::string, int>::iterator it;
 				for (it = clients.begin(); it != clients.end(); it++){
 					prnt+="username: "+it->first
-					+" value: " + std::to_string(it->second)+"\n";
+					+" value: " + std::to_string(it->second);
 				}
 				std::cout<<"Print:\n"<<prnt<<std::endl; // print has all clients 
 				if(login){
-				write2(ConnectFD,prnt,action); 
+					write2(ConnectFD,prnt,action); 
 				} else {
-					prnt="no estas logueado\n";
+					prnt="no estas logueado";
 					write2(ConnectFD,prnt,action); 
 				}
 			} else if (action == "L"){//protocolo for Login

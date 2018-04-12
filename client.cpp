@@ -30,7 +30,7 @@ std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross
 void read2(int SocketFD, char *buffer) {
 	int n;
 	for (;;){
-		bzero(buffer, 100);
+		bzero(buffer, 5);
 		do {
 			n = read(SocketFD, buffer, 4); // Reading first 4 bytes
 			if(n==0 /*&& T[1].joinable()==false*/){//FINALIZANDO CONEXION
@@ -52,16 +52,18 @@ void read2(int SocketFD, char *buffer) {
 				n=read(SocketFD, buffer,2);
 				int size_othername=atoi(buffer);
 				bzero(buffer,2);
-				n=read(SocketFD,buffer,size_othername);
-				std::string othername(buffer);	//othername
-				bzero(buffer, size_othername);
-				n=read(SocketFD,buffer,size_msg);
-				std::string msg(buffer);	//filename
-				bzero(buffer,size_msg);
+				char othernameBuffer[size_othername+1];
+				othernameBuffer[size_othername]=0;
+				n=read(SocketFD,othernameBuffer,size_othername);
+				std::string othername(othernameBuffer);	//othername
+				char filenameBuffer[size_msg+1];
+				filenameBuffer[size_msg]=0;
+				n=read(SocketFD,filenameBuffer,size_msg);
+				std::string msg(filenameBuffer);	//filename
+				std::cout << othername << " te envió: " << msg << std::endl; 
 				n=read(SocketFD, buffer, 4);
 				int size_file=atoi(buffer);
 				bzero(buffer,4);
-				std::cout << othername << " te envió: " << msg << std::endl; 
 				char msg_file[size_file];
 				n=read(SocketFD,msg_file,size_file);
 				FILE *newFile=fopen(msg.c_str(),"w");
@@ -176,7 +178,6 @@ void write2(int  SocketFD) {
 			std::cout << "error action no found, enter other\n ";
 			continue;
 		}
-		std::cout << msg.size() <<std::endl;
 		int nwrite = write(SocketFD, msg.c_str(), msg.size());
 		if(op=="E"){
 			return;
