@@ -70,7 +70,7 @@ void read2(int ConnectFD){
 				for (auto it=clients.begin();it!=clients.end();it++){
 					if(it->second==ConnectFD){
 						V.push_back(it->first);
-					}
+					}									
 				}
 				for (int i=0;i<V.size();i++){
 					clients.erase(V[i]);
@@ -114,40 +114,31 @@ void read2(int ConnectFD){
 				std::cout << "Login: " << buffer << std::endl;
 			} else if (action == "C"){ //protocolo for chating
 				std::string username = "";
-				find_str(ConnectFD,username); //username has nickname who send to mssg 
 
-				n = read(ConnectFD, buffer, 2); //reading a size of the other client
-				int size_othername=atoi(buffer);
-				bzero(buffer, 2);
-
-				n = read(ConnectFD, buffer, size_othername); //reading a nickname the other client
-				std::string othername(buffer);
-				bzero(buffer, size_othername);
+				find_str(ConnectFD,username);
 
 				int size_msg= size_txt;// size has the size the real mssg
 				// cout << "size_msg: " << size_msg<<endl;
 				n = read(ConnectFD, buffer, size_msg);
 				std::string msg(buffer);
-				bzero(buffer,size_msg);
-				if(find_nick(othername)==false){ //check if othername exists
-					std::string err = "nickname not found, enter other\n";
-					write2(ConnectFD, err.c_str(), action);
-					continue;
-				}	
 				
-				int otherConnectFD = clients.find(othername)->second; //finding socket number the other client for send to mssg 
-				if (otherConnectFD < 0){
-					perror("error in nickname");
-				}
+				bzero(buffer,size_msg);
 				
 				msg = username+": "+msg; //msg final
-				std::cout<<msg+" -> "+othername<<std::endl;
+				std::map<std::string, int>::iterator it;
 				if(login){
-				write2(otherConnectFD, msg, action);
-				} else {
-					msg="no estas conectado\n";
-					write2(otherConnectFD, msg, action);
-				}
+					for (it = clients.begin(); it != clients.end(); it++)
+						if (it->second != ConnectFD){
+							write2(it->second, msg, action);
+							std::cout<<msg+" -> "+it->first<<std::endl;
+						}
+				}	
+				// if(login){
+				// write2(otherConnectFD, msg, action);
+				// } else {
+				// 	msg="no estas conectado\n";
+				// 	write2(otherConnectFD, msg, action);
+				// }
 			}
 			else if (action == "E"){//protocol for End
 				std::vector<std::string> V;
