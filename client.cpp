@@ -13,6 +13,15 @@
 #include <vector>
 #include <errno.h>
 
+
+#include <ncurses.h>
+#include <chrono>         // std::chrono::seconds
+#include <unistd.h>
+
+
+ 
+using namespace std;
+
 std::vector<std::thread> T; //
 struct sockaddr_in stSockAddr; //
 int Res; //
@@ -48,51 +57,13 @@ void read2(int SocketFD, char *buffer) {
 				n = read(SocketFD, msg, size_msg);
 				msg[size_msg]=0;
 				printf ("[%s]\n", msg);
-			} else if (action == "D"){//Responsive when is file
-				n=read(SocketFD, buffer,2);
-				int size_othername=atoi(buffer);
-				bzero(buffer,2);
-				char othernameBuffer[size_othername+1];
-				othernameBuffer[size_othername]=0;
-				n=read(SocketFD,othernameBuffer,size_othername);
-				std::string othername(othernameBuffer);	//othername
-				char filenameBuffer[size_msg+1];
-				filenameBuffer[size_msg]=0;
-				n=read(SocketFD,filenameBuffer,size_msg);
-				std::string msg(filenameBuffer);	//filename
-				std::cout << othername << " te envió: " << msg << std::endl; 
-				n=read(SocketFD, buffer, 4);
-				int size_file=atoi(buffer);
-				bzero(buffer,4);
-				char msg_file[size_file];
-				n=read(SocketFD,msg_file,size_file);
-				FILE *newFile=fopen(msg.c_str(),"w");
-				for (int i=0;i<size_file;i++){
-					fprintf(newFile, "%c", msg_file[i]);
-				}
-				fclose(newFile);
-			}
+			} 
+
 
 			// n = read(SocketFD, buffer, atoi(buffer));
 			
 		} while (n == 0);
 	}
-}
-
-bool existContent(std::string &filename, std::string &file){
-	FILE *file_content;
-	if(!(file_content=fopen(filename.c_str(),"r+"))){
-		std::cout << "the file does not exist\n" << std::endl;
-		return false;
-	}
-	char c;
-	fscanf(file_content,"%c",&c);
-	while(!feof(file_content)){
-		file+=c;
-		fscanf(file_content,"%c",&c);
-	}
-	fclose(file_content);
-	return true;
 }
 
 void write2(int  SocketFD) {
@@ -138,7 +109,7 @@ void write2(int  SocketFD) {
 			//std::cin.ignore();
 			getline(std::cin,msg); //scan with spaces
 			//Protocolo:
-			msg=	fillZeros(msg.size(),4)+	// size of msg(4)
+			msg=	fillZeros(msg.size(),4)+	// size 192.168.0.7
 				"C"+ 				// C
 				fillZeros(nickname.size(),2)+	// nickname size(2)
 				nickname+			// nickname
@@ -150,30 +121,8 @@ void write2(int  SocketFD) {
 			msg = 	std::string("0000") +		// size of msg(4)
 				"E";				// E
 
-		} else if (op == "F"){ // protocolo for File
-
-			std::string file="",filename="",nickname="";
-			std::cout << "enter nickname to send file: ";
-			std::cin.ignore(); 
-			getline(std::cin, nickname); // scann with spaces
-			std::cout << "enter filename: ";
-			getline(std::cin, filename); // scann with spaces
-			if(!existContent(filename,file)){
-				continue;
-			}
-			if(file.size()>9999){
-				std::cout << "the file is very large(>9999)\n";
-				continue;
-			}
-			//Protocolo:
-			msg=	fillZeros(filename.size(),4) +	// size of filename(4)
-				"F" +				// F
-				fillZeros(nickname.size(),2) +	// nickname size(2)
-				nickname +			// nickaname
-				filename +			// filename
-				fillZeros(file.size(),4) +	// file's size(4)
-				file;				// file
-		} else{ // this can be better =/
+		}
+		else{ // this can be better =/
 			msg = "0000P";
 			std::cout << "error action no found, enter other\n ";
 			continue;
@@ -201,7 +150,7 @@ int main(){
 
 	stSockAddr.sin_family = AF_INET;
 	stSockAddr.sin_port = htons(1100);
-	Res = inet_pton(AF_INET, "10.0.1.11", &stSockAddr.sin_addr);
+	Res = inet_pton(AF_INET, "192.168.0.7", &stSockAddr.sin_addr);
 
 	if (0 > Res) {
 		perror("error: first parameter is not a valid address family");
