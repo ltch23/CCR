@@ -124,7 +124,7 @@ void read2(int ConnectFD){
 				
 				bzero(buffer,size_msg);
 				
-				msg = username+": "+msg; //msg final
+				// msg = username+": "+msg; //msg final
 				std::map<std::string, int>::iterator it;
 				if(login){
 					for (it = clients.begin(); it != clients.end(); it++)
@@ -133,12 +133,6 @@ void read2(int ConnectFD){
 							std::cout<<msg+" -> "+it->first<<std::endl;
 						}
 				}	
-				// if(login){
-				// write2(otherConnectFD, msg, action);
-				// } else {
-				// 	msg="no estas conectado\n";
-				// 	write2(otherConnectFD, msg, action);
-				// }
 			}
 			else if (action == "E"){//protocol for End
 				std::vector<std::string> V;
@@ -181,7 +175,7 @@ void acceptClient(int ConnectFD) {
 		exit(EXIT_FAILURE);
 	}
 
-	write2(ConnectFD,"Welcome to the game 0.0.1","C");
+	write2(ConnectFD,"Welcome","C");
 	std::thread(read2, ConnectFD).detach();
 	std::this_thread::sleep_for(std::chrono::seconds(100));
 }
