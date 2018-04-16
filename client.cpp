@@ -55,7 +55,9 @@ void print_win_params(WIN & p_win);
 void create_box(WIN & win, bool flag);
 int move_user1(WIN & win);
 void move_user2(WIN & win2,int ch);
-void bullet(WIN & p_win);
+// void bullet(WIN & p_win);
+void bullet(WIN  & p_win,WIN  & p_win2);
+
 void delete_box(WIN & p_win);
 
 
@@ -122,6 +124,7 @@ void write2(int  SocketFD) {
 }
 /**Program Game********************************************************************/
 void bullet(WIN  & p_win,WIN  & p_win2)
+// void bullet(WIN  & p_win)
 {
     int k,m,count=0;
     int x, y, w, h;
@@ -140,7 +143,7 @@ void bullet(WIN  & p_win,WIN  & p_win2)
 
     for (k=y-1;k>0;k--){
         move (k,m ); addstr("o");
-        count++;
+            count++;
         if(k == y2_inicial){
             for(int i=x2_inicial; i<x2_final; i++)
                 if(m==i){
@@ -150,11 +153,11 @@ void bullet(WIN  & p_win,WIN  & p_win2)
         }
     }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     for (k=y-1;k>y-1-count;k--){
-        move( k,m );addstr(" ");
-    }
+    // std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        // move( k,m );addstr(" ");
+    }    
 
 }
 int move_user1(WIN & win){
@@ -185,8 +188,10 @@ int move_user1(WIN & win){
                     ++win.starty;
                     create_box(win, TRUE);
                     break;
-            //         bullet(win);
-            //         break;
+            case 111:       
+                    bullet(win,win2);
+                    // bullet(win);
+                    break;
         }
         return ch;
     }
@@ -222,6 +227,10 @@ void move_user2(WIN & win2,int ch){
                     create_box(win2, FALSE);
                     ++win2.starty;
                     create_box(win2, TRUE);
+                    break;
+            case 111:
+                    bullet(win2,win1);
+                    // bullet(win2);
                     break;
         }       
 
@@ -327,7 +336,7 @@ int main(){
 	}
         std::string nickname = "";
         std::cout << "enter nickname: ";
-        std::cin.ignore(); 
+        // std::cin.ignore(); 
         getline(std::cin, nickname); // scann with spaces
         //Protocolo:
     std::string mssg= fillZeros(nickname.size(),4)+"L"+nickname;
