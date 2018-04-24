@@ -193,6 +193,7 @@ bool write2(int ConnectFD, std::string mssg, std::string act){
 		return true;
 	} else if (act == "L") { // L is when a nickname is repeat 
 		mssg = fillZeros(mssg.size(),4)+"N" +mssg;
+		std::cout<<mssg<<std::endl;
 		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
 		return true;
 	} else if (act == "C") { // L is when a nickname is repeat 

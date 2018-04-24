@@ -20,9 +20,6 @@
 #include <unistd.h>
 
 using namespace std;
-#include <ncurses.h>
-#include <chrono>         // std::chrono::seconds
-#include <unistd.h>
 
  
 
@@ -111,18 +108,19 @@ void read2(int SocketFD, char *buffer) {
                 int size_user=atoi(buffer);
                 bzero(buffer, 2); //equal to the before
 
-
                 char user[size_user+1];
                 n = read(SocketFD, user, size_user);
                 user[size_user]=0;
                 // std::cout<<"user: "<<user<<std::endl;
-
+                // findWIN(string(user), win2);
                 char msg[size_msg+1];
                 n = read(SocketFD, msg, size_msg);
                 msg[size_msg]=0;
+                int a = atoi(msg);
                 // std::cout<<"msg: "<<msg<<std::endl;
                 // printf ("[%s]\n", msg);
-            
+                
+                move_user2(win2,a);
 
 
             } 
@@ -130,28 +128,39 @@ void read2(int SocketFD, char *buffer) {
 
 
             else if (action == "N"){ // Responsive when is Printing or Chating or error in Login
-				char msg[size_msg+1];
-				n = read(SocketFD, msg, size_msg);
-				msg[size_msg]=0;
-				// printf ("[%s]\n", msg);
-                std::string mssg(msg);
-                // std::cout<<"mssg: "<<msg<<std::endl;
+				
+                // cout<<"entre"<<endl;
+               
+    //             char msg[size_msg+1];
+				// n = read(SocketFD, msg, size_msg);
+				// msg[size_msg]=0;
+				// // printf ("[%s]\n", msg);
+    //             std::string mssg(msg);
+    //             // std::cout<<"mssg: "<<msg<<std::endl;
                 
-                players[mssg] = win1;
-
-                std::map<std::string, WIN>::iterator it;
+    //             players[mssg] = WIN();
+                
+    //             // findWIN(this_user,win1);
+            
+    //             std::map<std::string, WIN>::iterator it;
                 
                 
-                    
-                    
+                 
+    //             std::cout<<"PLAYERS"<<std::endl;
+    //             std::cout<<this_user<<std::endl;
 
+    //             for (it = players.begin(); it != players.end(); it++){
+    //                 // if(this_user!=it->first){
+    //                     std::cout<<it->first<<"-"<<&(it->second)<<endl;
+    //                     init_win_params(it->second);
+    //                     print_win_params(it->second);
 
+    //                 // }
+    //             }
 
-                    // std::cout<<"PLAYERS"<<std::endl;
-                    // std::cout<<this_user<<std::endl;
-
-                // for (it = players.begin(); it != players.end(); it++)
-                    // std::cout<<it->first<<"-"<<&(it->second)<<endl;
+    //             attron(COLOR_PAIR(1));
+    //             refresh();  
+    //             attroff(COLOR_PAIR(1));
 
 
 
@@ -219,30 +228,27 @@ void write2(int  SocketFD) {
             noecho();
             init_pair(1, COLOR_CYAN, COLOR_BLACK); /* Line buffering disabled, Pass on*/
             
-            findWIN(this_user,win1);
             init_win_params(win1);
             print_win_params(win1);
-
-        
+            
+            init_win_params(win2);
+            print_win_params(win2);
+            
             attron(COLOR_PAIR(1));
             refresh();  
             attroff(COLOR_PAIR(1));
-                  
+
 
             while (1) {
                 
 
                 std:: string movement;
                 int ch = move_user1(win1);
-                // movement=std::to_string(ch) ;
-                // movement=fillZeros(movement.size(),4)+"C"+movement;
-                // int nwrite = write(SocketFD, movement.c_str(), movement.size());
-                // }
-                // thread(move_user1,std::ref(win1)).detach();
-                // std::this_thread::sleep_for(std::chrono::seconds(100));
-                // msg="sali";
-                // msg= fillZeros(msg.size(),4)+"C"+msg;
-                // }
+                movement=std::to_string(ch) ;
+                movement=fillZeros(movement.size(),4)+"C"+movement;
+                int nwrite = write(SocketFD, movement.c_str(), movement.size());
+                
+
             }
 
 		} else if (op == "E"){ // protocolo for End
@@ -509,7 +515,7 @@ int main(){
     T.resize(2);
     T[1]=(std::thread(write2, SocketFD));
     T[0]=(std::thread(read2, SocketFD, buffer));
-    // T[1].join();
+    T[1].join();
     T[0].join();
     shutdown(SocketFD, SHUT_RDWR);
     close(SocketFD);
