@@ -12,6 +12,7 @@
 #include <thread>
 #include <vector>
 #include <errno.h>
+#include <map>
 
 
 #include <ncurses.h>
@@ -27,6 +28,10 @@ struct sockaddr_in stSockAddr; //
 int Res; //
 int SocketFD ; //
 char buffer[5]; //
+std::string this_user="";
+
+std::map<std::string,int> players;
+
 
 std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross =)
 	std::string aux = std::to_string(aux_size);
@@ -48,20 +53,54 @@ void read2(int SocketFD, char *buffer) {
 			int size_msg=atoi(buffer);
 			bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
 
-			n = read(SocketFD, buffer, 1); //reading 1 bytes
-			std::string action(buffer);
-			bzero(buffer, 1); //equal to the before
+            n = read(SocketFD, buffer, 1); //reading 1 bytes
+            std::string action(buffer);
+            bzero(buffer, 1); //equal to the before
 
-			if (action == "R"){ // Responsive when is Printing or Chating or error in Login
+            if (action == "R"){ // Responsive when is Printing or Chating or error in Login
+                
+                n = read(SocketFD, buffer, 2); //reading 1 bytes
+                int size_user=atoi(buffer);
+                bzero(buffer, 2); //equal to the before
+
+
+                char user[size_user+1];
+                n = read(SocketFD, user, size_user);
+                user[size_user]=0;
+                std::cout<<"user: "<<user<<std::endl;
+
+                char msg[size_msg+1];
+                n = read(SocketFD, msg, size_msg);
+                msg[size_msg]=0;
+                std::cout<<"msg: "<<msg<<std::endl;
+                // printf ("[%s]\n", msg);
+            
+
+
+            } 
+
+
+
+            else if (action == "N"){ // Responsive when is Printing or Chating or error in Login
 				char msg[size_msg+1];
 				n = read(SocketFD, msg, size_msg);
 				msg[size_msg]=0;
 				printf ("[%s]\n", msg);
-			} 
+                std::string mssg(msg);
+                // std::cout<<"mssg: "<<msg<<std::endl;
+                
+                players[mssg] = 1;
 
+                std::map<std::string, int>::iterator it;
+                
+                std::cout<<"PLAYERS"<<std::endl;
+                std::cout<<this_user<<std::endl;
+
+                for (it = players.begin(); it != players.end(); it++)
+                    std::cout<<it->first<<"-"<<it->second<<endl;
 
 			// n = read(SocketFD, buffer, atoi(buffer));
-			
+			}
 		} while (n == 0);
 	}
 }
@@ -98,6 +137,7 @@ void write2(int  SocketFD) {
 			msg=	fillZeros(nickname.size(),4)+	// size of Nickname(4)
 				"L"+				// L
 				nickname;			// nickname
+            this_user=nickname;
 
 		} else if (op == "C")	{ //protocolo for Chat
 
@@ -143,8 +183,8 @@ int main(){
 	memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
 	stSockAddr.sin_family = AF_INET;
-	stSockAddr.sin_port = htons(1100);
-	Res = inet_pton(AF_INET, "192.168.0.7", &stSockAddr.sin_addr);
+	stSockAddr.sin_port = htons(1200);
+	Res = inet_pton(AF_INET, "127.0.0.1", &stSockAddr.sin_addr);
 
 	if (0 > Res) {
 		perror("error: first parameter is not a valid address family");

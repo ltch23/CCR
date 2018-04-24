@@ -100,7 +100,7 @@ void read2(int ConnectFD){
 					prnt="no estas logueado";
 					write2(ConnectFD,prnt,action); 
 				}
-			} else if (action == "L"){//protocolo for Login
+			} 	else if (action == "L"){//protocolo for Login
 				login=true;
 				
 				n = read(ConnectFD, buffer, size_txt);
@@ -111,8 +111,26 @@ void read2(int ConnectFD){
 				}
 
 				clients[buffer] = ConnectFD; //adding a newclient
+				
 				std::cout << "Login: " << buffer << std::endl;
-			} else if (action == "C"){ //protocolo for chating
+				std::string msg(buffer);
+
+				std::map<std::string, int>::iterator it;
+				
+				std::vector<std::string> players;
+				for (it = clients.begin(); it != clients.end(); it++)
+						players.push_back(it->first);
+				
+
+				for (int i = 0; i <players.size(); i++)
+					for (it = clients.begin(); it != clients.end(); it++){
+							write2(it->second, players[i], action);
+							// std::cout<<msg[i]+" -> "+it->first<<std::endl;
+						}
+				
+
+			} 
+			else if (action == "C"){ //protocolo for chating
 				std::string username = "";
 
 				find_str(ConnectFD,username);
@@ -124,7 +142,7 @@ void read2(int ConnectFD){
 				
 				bzero(buffer,size_msg);
 				
-				msg = username+": "+msg; //msg final
+				msg =fillZeros(msg.size(),4)+"R"+fillZeros(username.size(),2)+username+msg; //msg final
 				std::map<std::string, int>::iterator it;
 				if(login){
 					for (it = clients.begin(); it != clients.end(); it++)
@@ -166,8 +184,15 @@ void read2(int ConnectFD){
 
 bool write2(int ConnectFD, std::string mssg, std::string act){
 
-	if (act == "P" or act == "C" or act == "L") { // L is when a nickname is repeat 
+	if (act == "P") { // L is when a nickname is repeat 
 		mssg = fillZeros(mssg.size(),4)+"R" +mssg;
+		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
+		return true;
+	} else if (act == "L") { // L is when a nickname is repeat 
+		mssg = fillZeros(mssg.size(),4)+"N" +mssg;
+		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
+		return true;
+	} else if (act == "C") { // L is when a nickname is repeat 
 		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
 		return true;
 	} 
@@ -196,7 +221,7 @@ int main(void){
 	memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
 	stSockAddr.sin_family = AF_INET;
-	stSockAddr.sin_port = htons(1100);
+	stSockAddr.sin_port = htons(1200);
 	stSockAddr.sin_addr.s_addr = INADDR_ANY;
 
 	if(-1 == bind(SocketFD,(const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in))){
