@@ -124,7 +124,29 @@ void read2(int ConnectFD){
 				
 				bzero(buffer,size_msg);
 				
-                                msg =fillZeros(msg.size(),4)+"R"+fillZeros(username.size(),2)+username+msg; //msg final
+                msg =fillZeros(msg.size(),4)+"R"+fillZeros(username.size(),2)+username+msg; //msg final
+                std::map<std::string, int>::iterator it;
+                if(login){
+                    for (it = clients.begin(); it != clients.end(); it++)
+                        if (it->second != ConnectFD){
+                            int nwrite= write(it->second, msg.c_str(), msg.size());
+                            std::cout<<msg+" -> "+it->first<<std::endl;
+                        }
+                }   
+
+			}else if (action == "G"){ //protocolo for chating
+				std::string username = "";
+
+				find_str(ConnectFD,username);
+
+				int size_msg= size_txt;// size has the size the real mssg
+				// cout << "size_msg: " << size_msg<<endl;
+				n = read(ConnectFD, buffer, size_msg);
+				std::string msg(buffer);
+				
+				bzero(buffer,size_msg);
+				
+                msg =fillZeros(msg.size(),4)+"N"+fillZeros(username.size(),2)+username+msg; //msg final
                 std::map<std::string, int>::iterator it;
                 if(login){
                     for (it = clients.begin(); it != clients.end(); it++)
@@ -166,6 +188,11 @@ bool write2(int ConnectFD, std::string mssg, std::string act){
 		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
 		return true;
 	} 
+	else if(act=="G"){
+		mssg = fillZeros(mssg.size(),4)+"N" +mssg;
+		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
+		return true;	
+	}
 	return false;
 }
 

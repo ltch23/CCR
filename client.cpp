@@ -95,7 +95,7 @@ void read2(int SocketFD, char *buffer) {
 			std::string action(buffer);
 			bzero(buffer, 1); //equal to the before
 
-			if (action == "R"){ // Responsive when is Printing or Chating or error in Login
+			if (action == "N"){ // Responsive when is Printing or Chating or error in Login
 				
                 // char msg[size_msg+1];
                 // n = read(SocketFD, msg, size_msg);
@@ -125,6 +125,25 @@ void read2(int SocketFD, char *buffer) {
 
 
 			}
+            else if(action=="R"){
+
+
+                 n = read(SocketFD, buffer, 2); //reading 1 bytes
+                int size_user=atoi(buffer);
+                bzero(buffer, 2); //equal to the before
+
+                char user[size_user+1];
+                n = read(SocketFD, user, size_user);
+                user[size_user]=0;
+                // std::cout<<"user: "<<user<<std::endl;
+                // findWIN(string(user), win2);
+                char msg[size_msg+1];
+                n = read(SocketFD, msg, size_msg);
+                msg[size_msg]=0;
+               
+
+                // printf ("[%s]\n", msg);
+            }
 
 			// n = read(SocketFD, buffer, atoi(buffer));
 			
@@ -202,8 +221,9 @@ void write2(int  SocketFD) {
         		
                 std:: string movement;
                 int ch = move_user1(win1);
+                if(ch==27) break;
                 movement=std::to_string(ch) ;
-                movement=fillZeros(movement.size(),4)+"C"+movement;
+                movement=fillZeros(movement.size(),4)+"G"+movement;
                 int nwrite = write(SocketFD, movement.c_str(), movement.size());
                 // }
                 // thread(move_user1,std::ref(win1)).detach();
@@ -212,7 +232,7 @@ void write2(int  SocketFD) {
         		// msg=	fillZeros(msg.size(),4)+"C"+msg;
         		// }
         	}
-
+            endwin();
 
         }else if (op == "E"){ // protocolo for End
 
@@ -267,17 +287,17 @@ void bullet(WIN  & p_win,WIN  & p_win2)
 
     for (k=y-1;k>y-1-count;k--){
     // std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        // move( k,m );addstr(" ");
+        move( k,m );addstr(" ");
     }    
 
 }
 int move_user1(WIN & win){
 
-   	int ch;
+   	int ch = getch();
     create_box(win, TRUE);
     // while((ch = getch()) != 27)
-    if((ch = getch()) != 27)
-    {
+    // if((ch = getch()) != 27)
+    // {
         switch(ch)
         {   case KEY_LEFT:
                     create_box(win, FALSE);
@@ -303,9 +323,10 @@ int move_user1(WIN & win){
                     bullet(win,win2);
                     // bullet(win);
                     break;
+
         }
         return ch;
-    }
+    // }
     
     //endwin();
 
@@ -342,6 +363,9 @@ void move_user2(WIN & win2,int ch){
             case 111:
                     bullet(win2,win1);
                     // bullet(win2);
+                    break;
+            case 26:
+                    endwin();
                     break;
         }       
 
