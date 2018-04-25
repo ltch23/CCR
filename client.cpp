@@ -212,7 +212,25 @@ void write2(int  SocketFD) {
         		// msg=	fillZeros(msg.size(),4)+"C"+msg;
         		// }
         	}
+
+
+        }else if (op == "E"){ // protocolo for End
+
+            //Protocolo:
+            msg =   std::string("0000") +       // size of msg(4)
+                "E";                // E
+
         }
+        else{ // this can be better =/
+            msg = "0000P";
+            std::cout << "error action no found, enter other\n ";
+            continue;
+        }
+        int nwrite = write(SocketFD, msg.c_str(), msg.size());
+        if(op=="E"){
+            return;
+        }
+
 }
 }
 /**Program Game********************************************************************/
