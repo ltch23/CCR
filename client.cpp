@@ -30,7 +30,6 @@ void write2(int  SocketFD);
 std::vector<std::thread> T; //
 struct sockaddr_in stSockAddr; //
 int Res; //
-int SocketFD ; //
 char buffer[20]; //
 
 /**Variables and FUnctions for Game**********************/
@@ -437,24 +436,24 @@ void delete_box(WIN  & p_win){
         refresh();
 }
 
-
-/*MAIN*******************************************/
-int main(){
-    int n;
-    
+void initSocket(int& SocketFD){
     SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-    if (-1 == SocketFD)
-    {
+    if (-1 == SocketFD) {
         perror("cannot create socket");
         exit(EXIT_FAILURE);
     }
+}
 
+
+/*MAIN*******************************************/
+int main(){
+    int SocketFD;
+    initSocket(SocketFD);
     memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
     stSockAddr.sin_family = AF_INET;
     stSockAddr.sin_port = htons(1200);
-    Res = inet_pton(AF_INET, "192.168.0.7", &stSockAddr.sin_addr);
+    Res = inet_pton(AF_INET, "10.0.1.12"/*ifconfig*/, &stSockAddr.sin_addr);
 
     if (0 > Res) {
         perror("error: first parameter is not a valid address family");
