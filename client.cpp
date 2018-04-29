@@ -12,6 +12,7 @@
 #include <thread>
 #include <vector>
 #include <errno.h>
+#include <map>
 
 
 #include <ncurses.h>
@@ -31,7 +32,8 @@ std::vector<std::thread> T; //
 struct sockaddr_in stSockAddr; //
 int Res; //
 int SocketFD ; //
-char buffer[20]; //
+char buffer[20]; 
+std::string nickname="";
 
 /**Variables and FUnctions for Game**********************/
 
@@ -46,17 +48,15 @@ typedef struct _WIN_struct {
         WIN_BORDER border;
 }WIN;
 
-WIN win1;
-WIN win2;
-
+map<string, WIN> players;
 
 void init_win_params(WIN & p_win);
 void print_win_params(WIN & p_win);
 void create_box(WIN & win, bool flag);
-int move_user1(WIN & win);
+// int move_user1();
 void move_user2(WIN & win2,int ch);
-// void bullet(WIN & p_win);
-void bullet(WIN  & p_win,WIN  & p_win2);
+void bullet(WIN & p_win);
+// void bullet(WIN  & p_win,WIN  & p_win2);
 
 void delete_box(WIN & p_win);
 
@@ -75,9 +75,19 @@ std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross
 //     std::map<std::string, WIN>::iterator it;
 //     for (it = players.begin(); it != players.end(); it++)
 //         if(it->first == st){
-//             p_win=it->second;
+//             p_win=(it->second);
+//             std::cout<<"founded"<<std::endl;
 //         }
 // }
+
+bool existUser(std::string msg){
+    std::map<std::string, WIN>::iterator it;
+    for (it = players.begin(); it != players.end(); it++)
+        if(msg==it->first)
+            return true;
+    return false;
+
+}
 
 void read2(int SocketFD, char *buffer) {
     int n;
@@ -95,15 +105,61 @@ void read2(int SocketFD, char *buffer) {
             std::string action(buffer);
             bzero(buffer, 1); //equal to the before
 
-            if (action == "N"){ // Responsive when is Printing or Chating or error in Login
+            if (action == "R"){ // Responsive when is Printing or Chating or error in Login
+                char msg[size_msg+1];
+                n = read(SocketFD, msg, size_msg);
+                msg[size_msg]=0;
+                printf ("[%s]\n", msg);
+            } else if (action == "D"){//Responsive when is file
+                n=read(SocketFD, buffer,2);
+                int size_othername=atoi(buffer);
+                bzero(buffer,2);
+                char othernameBuffer[size_othername+1];
+                othernameBuffer[size_othername]=0;
+                n=read(SocketFD,othernameBuffer,size_othername);
+                std::string othername(othernameBuffer); //othername
+                char filenameBuffer[size_msg+1];
+                filenameBuffer[size_msg]=0;
+                n=read(SocketFD,filenameBuffer,size_msg);
+                std::string msg(filenameBuffer);    //filename
+                std::cout << othername << " te envió: " << msg << std::endl; 
+                n=read(SocketFD, buffer, 4);
+                int size_file=atoi(buffer);
+                bzero(buffer,4);
+                char msg_file[size_file];
+                n=read(SocketFD,msg_file,size_file);
+                FILE *newFile=fopen(msg.c_str(),"w");
+                for (int i=0;i<size_file;i++){
+                    fprintf(newFile, "%c", msg_file[i]);
+                }
+                fclose(newFile);
+            }else if(action=="N"){
+
+                char msg[size_msg+1];
+                n = read(SocketFD, msg, size_msg);
+                msg[size_msg]=0;
                 
-                // char msg[size_msg+1];
-                // n = read(SocketFD, msg, size_msg);
-                // msg[size_msg]=0;
-                // int a = atoi(msg);
 
-                // move_user2(win2,a);
+                if(existUser(string(msg))==false){
+                    players[string(msg)]=  WIN();
+                }
 
+                // std::cout<<"read"<<std::endl;
+                std::map<std::string, WIN>::iterator it;
+                // std::cout<<std::endl;
+                for (it = players.begin(); it != players.end(); it++){
+                    
+                    // std::cout<<it->first<<"-"<<&it->second<<std::endl;   
+                // init_win_params(players[string(msg)]);
+                // print_win_params(players[string(msg)]);
+                
+
+            }
+
+                // std::cout<<std::endl;
+
+
+            } else if (action == "H"){ 
 
                 n = read(SocketFD, buffer, 2); //reading 1 bytes
                 int size_user=atoi(buffer);
@@ -119,30 +175,21 @@ void read2(int SocketFD, char *buffer) {
                 msg[size_msg]=0;
                 int a = atoi(msg);
                 // std::cout<<"msg: "<<msg<<std::endl;
-                // printf ("[%s]\n", msg);
-                
-                move_user2(win2,a);
+                // printf ("[%s]\n"1, msg);
+                // move_user2(win2,a);
 
+                std::map<std::string, WIN>::iterator it;
+                for (it = players.begin(); it != players.end(); it++){
+                    // std::cout<<it->first<<"-"<<&it->second<<std::endl;  
 
-            }
-            else if(action=="R"){
+                    if(it->first == string(user)){
+                        
+                        // std::cout<<"founded"<<std::endl;
+                        move_user2(it->second,a);
+                    }
+                }
+                            // std::cout<<"w: "<<tmp<<std::endl;
 
-
-                 n = read(SocketFD, buffer, 2); //reading 1 bytes
-                int size_user=atoi(buffer);
-                bzero(buffer, 2); //equal to the before
-
-                char user[size_user+1];
-                n = read(SocketFD, user, size_user);
-                user[size_user]=0;
-                // std::cout<<"user: "<<user<<std::endl;
-                // findWIN(string(user), win2);
-                char msg[size_msg+1];
-                n = read(SocketFD, msg, size_msg);
-                msg[size_msg]=0;
-               
-
-                // printf ("[%s]\n", msg);
             }
 
             // n = read(SocketFD, buffer, atoi(buffer));
@@ -173,10 +220,12 @@ void write2(int  SocketFD) {
             //Protocolo:    
             msg =   std::string("0000")+    // size of msg
                 "P";            // P
+        int nwrite = write(SocketFD, msg.c_str(), msg.size());
+
 
         } else if (op == "L"){//protocolo for Login
 
-            std::string nickname = "";
+            nickname = "";
             std::cout << "enter nickname: ";
             std::cin.ignore(); 
             getline(std::cin, nickname); // scann with spaces
@@ -185,16 +234,28 @@ void write2(int  SocketFD) {
                 "L"+                // L
                 nickname;           // nickname
             // this_user=nickname;
+            
+             int nwrite = write(SocketFD, msg.c_str(), msg.size());
+
+
 
         } else if (op == "C") { //protocolo for Chat
 
-            std::cout<<"enter message: ";
+            std::string nickname="";
+            std::cout<<"enter nickname to chat: ";
             std::cin.ignore();
+            getline(std::cin, nickname); //scan with spaces
+            std::cout<<"enter message: ";
+            //std::cin.ignore();
             getline(std::cin,msg); //scan with spaces
             //Protocolo:
-                msg=    fillZeros(msg.size(),4)+    // size 192.168.0.7
+            msg=    fillZeros(msg.size(),4)+    // size of msg(4)
                 "C"+                // C
-                msg;                // msg
+                fillZeros(nickname.size(),2)+   // nickname size(2)
+                nickname+           // nickname
+                msg; // msg
+            int nwrite = write(SocketFD, msg.c_str(), msg.size());
+
 
         } else if (op == "G")   { //protocolo for Chat
 
@@ -205,34 +266,40 @@ void write2(int  SocketFD) {
             keypad(stdscr, TRUE);           /* I need that nifty F1         */
             noecho();
             init_pair(1, COLOR_CYAN, COLOR_BLACK); /* Line buffering disabled, Pass on*/
-            init_win_params(win1);
-            print_win_params(win1);
-
-            init_win_params(win2);
-            print_win_params(win2);
-
-            attron(COLOR_PAIR(1));
-            refresh();  
-            attroff(COLOR_PAIR(1));
-
-
-
-                while (1) {
+         
+            // std::cout<<"write"<<std::endl; 
+            std::map<std::string, WIN>::iterator it;
+            // std::cout<<std::endl;
+            for (it = players.begin(); it != players.end(); it++){
                 
-                std:: string movement;
-                int ch = move_user1(win1);
-                if(ch==27) break;
-                movement=std::to_string(ch) ;
-                movement=fillZeros(movement.size(),4)+"G"+movement;
-                int nwrite = write(SocketFD, movement.c_str(), movement.size());
-                // }
-                // thread(move_user1,std::ref(win1)).detach();
-                // std::this_thread::sleep_for(std::chrono::seconds(100));
-                // msg="sali";
-                // msg= fillZeros(msg.size(),4)+"C"+msg;
-                // }
+                // std::cout<<it->first<<"-"<<&it->second<<std::endl;   
+                init_win_params(players[string(msg)]);
+                print_win_params(players[string(msg)]);
+                
+
             }
-            endwin();
+
+            // create_box(players[nickname], TRUE);
+
+            // attron(COLOR_PAIR(1));
+            // refresh();  
+            // attroff(COLOR_PAIR(1));
+
+
+                std:: string movement;
+            while (1){
+             // for(int i=100;i<105;i++){   
+                int ch=getch();
+                // int ch=i;
+                // std::cout<<"entre"<<std::endl;
+                // int ch = getch();
+                // if(ch==27) break;
+                movement= std::to_string(ch);
+                movement= fillZeros(movement.size(),4)+"G"+movement;
+                int nwrite = write(SocketFD, movement.c_str(), movement.size());
+            
+            }
+            // endwin();
 
         }else if (op == "E"){ // protocolo for End
 
@@ -244,9 +311,11 @@ void write2(int  SocketFD) {
         else{ // this can be better =/
             msg = "0000P";
             std::cout << "error action no found, enter other\n ";
+            int nwrite = write(SocketFD, msg.c_str(), msg.size());
+
             continue;
         }
-        int nwrite = write(SocketFD, msg.c_str(), msg.size());
+        // int nwrite = write(SocketFD, msg.c_str(), msg.size());
         if(op=="E"){
             return;
         }
@@ -254,83 +323,48 @@ void write2(int  SocketFD) {
 }
 }
 /**Program Game********************************************************************/
-void bullet(WIN  & p_win,WIN  & p_win2)
-// void bullet(WIN  & p_win)
-{
-    int k,m,count=0;
-    int x, y, w, h;
-    int x2_inicial, y2_inicial, x2_final;
+// void bullet(WIN  * p_win,WIN  * p_win2)
+// // void bullet(WIN  & p_win)
+// {
+//     int k,m,count=0;
+//     int x, y, w, h;
+//     int x2_inicial, y2_inicial, x2_final;
     
-    x = p_win.startx;
-    y = p_win.starty;
-    w = p_win.width;
-    h = p_win.height;
+//     x = p_win.startx;
+//     y = p_win.starty;
+//     w = p_win.width;
+//     h = p_win.height;
     
-    x2_inicial = p_win2.startx;
-    y2_inicial = p_win2.starty;
+//     x2_inicial = p_win2.startx;
+//     y2_inicial = p_win2.starty;
 
-    x2_final = x2_inicial + w;
-    m=x+w/2;
+//     x2_final = x2_inicial + w;
+//     m=x+w/2;
 
-    for (k=y-1;k>0;k--){
-        move (k,m ); addstr("o");
-            count++;
-        if(k == y2_inicial){
-            for(int i=x2_inicial; i<x2_final; i++)
-                if(m==i){
-                    delete_box(p_win2);
-                    break;
-                }
-        }
-    }
+//     for (k=y-1;k>0;k--){
+//         move (k,m ); addstr("o");
+//             count++;
+//         if(k == y2_inicial){
+//             for(int i=x2_inicial; i<x2_final; i++)
+//                 if(m==i){
+//                     delete_box(p_win2);
+//                     break;
+//                 }
+//         }
+//     }
 
 
-    for (k=y-1;k>y-1-count;k--){
-    // std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        move( k,m );addstr(" ");
-    }    
+//     for (k=y-1;k>y-1-count;k--){
+//     // std::this_thread::sleep_for(std::chrono::milliseconds(50));
+//         move( k,m );addstr(" ");
+//     }    
 
-}
-int move_user1(WIN & win){
+// }
+// int move_user1(){
 
-    int ch = getch();
-    create_box(win, TRUE);
-    // while((ch = getch()) != 27)
-    // if((ch = getch()) != 27)
-    // {
-        switch(ch)
-        {   case KEY_LEFT:
-                    create_box(win, FALSE);
-                    --win.startx;
-                    create_box(win, TRUE);
-                    break;
-            case KEY_RIGHT:
-                    create_box(win, FALSE);
-                    ++win.startx;
-                    create_box(win, TRUE);
-                    break;
-            case KEY_UP:
-                    create_box(win, FALSE);
-                    --win.starty;
-                    create_box(win, TRUE);
-                    break;
-            case KEY_DOWN:
-                    create_box(win, FALSE);
-                    ++win.starty;
-                    create_box(win, TRUE);
-                    break;
-            case 111:       
-                    bullet(win,win2);
-                    // bullet(win);
-                    break;
-
-        }
-        return ch;
-    // }
-    
-    //endwin();
-
-}
+//     int ch = getch();
+//     return ch;
+// }
 
 void move_user2(WIN & win2,int ch){
 
@@ -361,7 +395,7 @@ void move_user2(WIN & win2,int ch){
                     create_box(win2, TRUE);
                     break;
             case 111:
-                    bullet(win2,win1);
+                    // bullet(win2,win1);
                     // bullet(win2);
                     break;
             case 26:
@@ -392,7 +426,7 @@ void init_win_params(WIN & p_win){
 void print_win_params(WIN & p_win){
 }
 
-void create_box(WIN  & p_win, bool flag){
+void create_box(WIN & p_win, bool flag){
         
         int i, j;
         int x, y, w, h;
@@ -454,7 +488,7 @@ int main(){
 
     stSockAddr.sin_family = AF_INET;
     stSockAddr.sin_port = htons(1200);
-    Res = inet_pton(AF_INET, "192.168.0.7", &stSockAddr.sin_addr);
+    Res = inet_pton(AF_INET, "127.0.0.1", &stSockAddr.sin_addr);
 
     if (0 > Res) {
         perror("error: first parameter is not a valid address family");
