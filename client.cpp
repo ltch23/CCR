@@ -64,11 +64,11 @@ void delete_box(WIN & p_win);
 /**Program Socket********************************************************************/
 
 std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross =)
-	std::string aux = std::to_string(aux_size);
-	int dif = nroBytes - int(aux.size());
-	for (int i = 0; i < dif; i++)
-		aux = "0" + aux;
-	return aux;
+    std::string aux = std::to_string(aux_size);
+    int dif = nroBytes - int(aux.size());
+    for (int i = 0; i < dif; i++)
+        aux = "0" + aux;
+    return aux;
 }
 // void findWIN(std::string st, WIN & p_win){//return nickanme found their number socket  
 
@@ -80,23 +80,23 @@ std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross
 // }
 
 void read2(int SocketFD, char *buffer) {
-	int n;
-	for (;;){
-		bzero(buffer, 5);
-		do {
-			n = read(SocketFD, buffer, 4); // Reading first 4 bytes
-			if(n==0 /*&& T[1].joinable()==false*/){//FINALIZANDO CONEXION
-				return;
-			}
-			int size_msg=atoi(buffer);
-			bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
+    int n;
+    for (;;){
+        bzero(buffer, 5);
+        do {
+            n = read(SocketFD, buffer, 4); // Reading first 4 bytes
+            if(n==0 /*&& T[1].joinable()==false*/){//FINALIZANDO CONEXION
+                return;
+            }
+            int size_msg=atoi(buffer);
+            bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
 
-			n = read(SocketFD, buffer, 1); //reading 1 bytes
-			std::string action(buffer);
-			bzero(buffer, 1); //equal to the before
+            n = read(SocketFD, buffer, 1); //reading 1 bytes
+            std::string action(buffer);
+            bzero(buffer, 1); //equal to the before
 
-			if (action == "N"){ // Responsive when is Printing or Chating or error in Login
-				
+            if (action == "N"){ // Responsive when is Printing or Chating or error in Login
+                
                 // char msg[size_msg+1];
                 // n = read(SocketFD, msg, size_msg);
                 // msg[size_msg]=0;
@@ -124,7 +124,7 @@ void read2(int SocketFD, char *buffer) {
                 move_user2(win2,a);
 
 
-			}
+            }
             else if(action=="R"){
 
 
@@ -145,15 +145,15 @@ void read2(int SocketFD, char *buffer) {
                 // printf ("[%s]\n", msg);
             }
 
-			// n = read(SocketFD, buffer, atoi(buffer));
-			
-		} while (n == 0);
-	}
+            // n = read(SocketFD, buffer, atoi(buffer));
+            
+        } while (n == 0);
+    }
 }
 
 void write2(int  SocketFD) {
-	std::string msg , aux = "", op = "";
-	int dif = 0;
+    std::string msg , aux = "", op = "";
+    int dif = 0;
 
     while (1) {
         msg="";
@@ -217,8 +217,8 @@ void write2(int  SocketFD) {
 
 
 
-            	while (1) {
-        		
+                while (1) {
+                
                 std:: string movement;
                 int ch = move_user1(win1);
                 if(ch==27) break;
@@ -228,10 +228,10 @@ void write2(int  SocketFD) {
                 // }
                 // thread(move_user1,std::ref(win1)).detach();
                 // std::this_thread::sleep_for(std::chrono::seconds(100));
-        		// msg="sali";
-        		// msg=	fillZeros(msg.size(),4)+"C"+msg;
-        		// }
-        	}
+                // msg="sali";
+                // msg= fillZeros(msg.size(),4)+"C"+msg;
+                // }
+            }
             endwin();
 
         }else if (op == "E"){ // protocolo for End
@@ -293,7 +293,7 @@ void bullet(WIN  & p_win,WIN  & p_win2)
 }
 int move_user1(WIN & win){
 
-   	int ch = getch();
+    int ch = getch();
     create_box(win, TRUE);
     // while((ch = getch()) != 27)
     // if((ch = getch()) != 27)
@@ -440,49 +440,49 @@ void delete_box(WIN  & p_win){
 
 /*MAIN*******************************************/
 int main(){
-	int n;
-	
-	SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    int n;
+    
+    SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-	if (-1 == SocketFD)
-	{
-		perror("cannot create socket");
-		exit(EXIT_FAILURE);
-	}
+    if (-1 == SocketFD)
+    {
+        perror("cannot create socket");
+        exit(EXIT_FAILURE);
+    }
 
-	memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
+    memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
-	stSockAddr.sin_family = AF_INET;
-	stSockAddr.sin_port = htons(1200);
-	Res = inet_pton(AF_INET, "192.168.0.7", &stSockAddr.sin_addr);
+    stSockAddr.sin_family = AF_INET;
+    stSockAddr.sin_port = htons(1200);
+    Res = inet_pton(AF_INET, "192.168.0.7", &stSockAddr.sin_addr);
 
-	if (0 > Res) {
-		perror("error: first parameter is not a valid address family");
-		close(SocketFD);
-		exit(EXIT_FAILURE);
-	} else if (0 == Res) {
-		perror("char string (second parameter does not contain valid ipaddress");
-		close(SocketFD);
-		exit(EXIT_FAILURE);
-	} if (-1 == connect(SocketFD, (const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in))) {
-		perror("connect failed");
-		close(SocketFD);
-		exit(EXIT_FAILURE);
-	}
+    if (0 > Res) {
+        perror("error: first parameter is not a valid address family");
+        close(SocketFD);
+        exit(EXIT_FAILURE);
+    } else if (0 == Res) {
+        perror("char string (second parameter does not contain valid ipaddress");
+        close(SocketFD);
+        exit(EXIT_FAILURE);
+    } if (-1 == connect(SocketFD, (const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in))) {
+        perror("connect failed");
+        close(SocketFD);
+        exit(EXIT_FAILURE);
+    }
        
 
-	T.resize(2);
-	T[0]=(std::thread(read2, SocketFD, buffer));
-	T[1]=(std::thread(write2, SocketFD));
+    T.resize(2);
+    T[0]=(std::thread(read2, SocketFD, buffer));
+    T[1]=(std::thread(write2, SocketFD));
     T[0].join();
-	T[1].join();
-	shutdown(SocketFD, SHUT_RDWR);
-	close(SocketFD);
-	if(T[1].joinable()){
-		perror("server is close");
-		exit(EXIT_FAILURE);
-	}
-	return 0;
+    T[1].join();
+    shutdown(SocketFD, SHUT_RDWR);
+    close(SocketFD);
+    if(T[1].joinable()){
+        perror("server is close");
+        exit(EXIT_FAILURE);
+    }
+    return 0;
 }
 
 
