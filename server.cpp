@@ -91,7 +91,7 @@ void read2(int ConnectFD){
 				std::map<std::string, int>::iterator it;
 				for (it = clients.begin(); it != clients.end(); it++){
 					prnt+="username: "+it->first
-					+" value: " + std::to_string(it->second);
+					+" value: " + std::to_string(it->second) + "\n";
 				}
 				std::cout<<"Print:\n"<<prnt<<std::endl; // print has all clients 
 				if(login){
@@ -208,6 +208,24 @@ void acceptClient(int ConnectFD) {
 	std::this_thread::sleep_for(std::chrono::seconds(100));
 }
 
+bool startConnection(int port){
+	stSockAddr.sin_port = htons(port);
+	if(-1 == bind(SocketFD,(const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in))){
+		/*perror("error bind failed");
+		close(SocketFD);
+		exit(EXIT_FAILURE);*/
+		return false;
+	}
+	if(-1 == listen(SocketFD, 10)){
+		/*perror("error listen failed");
+		close(SocketFD);
+		exit(EXIT_FAILURE);*/
+		return false;
+	}
+	std::cout << "Port " << port << ": " << "connection success" << std::endl;
+	return true;
+}
+
 int main(void){
 
 	if(-1 == SocketFD){
@@ -218,19 +236,9 @@ int main(void){
 	memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
 	stSockAddr.sin_family = AF_INET;
-	stSockAddr.sin_port = htons(1200);
 	stSockAddr.sin_addr.s_addr = INADDR_ANY;
-
-	if(-1 == bind(SocketFD,(const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in))){
-		perror("error bind failed");
-		close(SocketFD);
-		exit(EXIT_FAILURE);
-	}
-
-	if(-1 == listen(SocketFD, 10)){
-		perror("error listen failed");
-		close(SocketFD);
-		exit(EXIT_FAILURE);
+	for (int i=1200;startConnection(i)==false;i++){
+		std::cout << "Port " << i << ": " << "bind or listen error" << std::endl;
 	}
 	
 	while(true){

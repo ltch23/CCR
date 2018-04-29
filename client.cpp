@@ -12,27 +12,29 @@
 #include <thread>
 #include <vector>
 #include <errno.h>
+#include <map>
 
 
 #include <ncurses.h>
 #include <chrono>         // std::chrono::seconds
 #include <unistd.h>
 
+#include "utilidad.h"
+#include "protocoloCliente.h"
+#include "modelocs.h"
+
+#define KEY_ESC  26
+#define KEY_BUL  111
  
 using namespace std;
 
 /**Variables and FUnctions for Soscket cliente conection**********************/
 
-void read2(int SocketFD, char *buffer);
+void read2(int SocketFD);
 std::string fillZeros(int aux_size,int nroBytes);
 void write2(int  SocketFD);
 
 std::vector<std::thread> T; //
-struct sockaddr_in stSockAddr; //
-int Res; //
-int SocketFD ; //
-char buffer[20]; //
-
 /**Variables and FUnctions for Game**********************/
 
 typedef struct _win_border_struct {
@@ -63,13 +65,7 @@ void delete_box(WIN & p_win);
 
 /**Program Socket********************************************************************/
 
-std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross =)
-	std::string aux = std::to_string(aux_size);
-	int dif = nroBytes - int(aux.size());
-	for (int i = 0; i < dif; i++)
-		aux = "0" + aux;
-	return aux;
-}
+
 // void findWIN(std::string st, WIN & p_win){//return nickanme found their number socket  
 
 //     std::map<std::string, WIN>::iterator it;
@@ -79,13 +75,16 @@ std::string fillZeros(int aux_size,int nroBytes){ // complete number with zeross
 //         }
 // }
 
-void read2(int SocketFD, char *buffer) {
+void read2(int SocketFD) {
+	char buffer[20]; //
 	int n;
+	ClientProtocol CP;
 	for (;;){
 		bzero(buffer, 5);
 		do {
 			n = read(SocketFD, buffer, 4); // Reading first 4 bytes
-			if(n==0 /*&& T[1].joinable()==false*/){//FINALIZANDO CONEXION
+			if(n==0){//interrupted connection
+				cout << "Server: The connection was interrupted" << endl;
 				return;
 			}
 			int size_msg=atoi(buffer);
@@ -151,107 +150,71 @@ void read2(int SocketFD, char *buffer) {
 	}
 }
 
-void write2(int  SocketFD) {
-	std::string msg , aux = "", op = "";
-	int dif = 0;
-
-    while (1) {
-        msg="";
-        std::cout << "------Menu (action)-----\n"
+void printMenu(){
+        std::cout << "\n------Menu (action)-----\n"
              << "P -> Print list of user on the chat \n"
              << "L -> Login to the char\n"
              << "C -> Send a msg to a user on the chat\n"
              << "E -> End chat or logout from chat\n"
              << "F -> Send a file from a user to another user\n"
-             << "G -> G\n"
+             << "G -> Joint to the game\n"
              << "----------------------------\n"
              << std::endl;
-        std::cin >> op;
-
-        if (op == "P") {// protocolo for Print
-
-            //Protocolo:    
-            msg =   std::string("0000")+    // size of msg
-                "P";            // P
-
-        } else if (op == "L"){//protocolo for Login
-
-            std::string nickname = "";
-            std::cout << "enter nickname: ";
-            std::cin.ignore(); 
-            getline(std::cin, nickname); // scann with spaces
-            //Protocolo:
-            msg=    fillZeros(nickname.size(),4)+   // size of Nickname(4)
-                "L"+                // L
-                nickname;           // nickname
-            // this_user=nickname;
-
-        } else if (op == "C") { //protocolo for Chat
-
-            std::cout<<"enter message: ";
-            std::cin.ignore();
-            getline(std::cin,msg); //scan with spaces
-            //Protocolo:
-                msg=    fillZeros(msg.size(),4)+    // size 192.168.0.7
-                "C"+                // C
-                msg;                // msg
-
-        } else if (op == "G")   { //protocolo for Chat
-
-
-            initscr();                      /* Start curses mode            */
-            start_color();                  /* Start the color functionality */
-            cbreak();
-            keypad(stdscr, TRUE);           /* I need that nifty F1         */
-            noecho();
-            init_pair(1, COLOR_CYAN, COLOR_BLACK); /* Line buffering disabled, Pass on*/
-            init_win_params(win1);
-            print_win_params(win1);
-
-            init_win_params(win2);
-            print_win_params(win2);
-
-            attron(COLOR_PAIR(1));
-            refresh();  
-            attroff(COLOR_PAIR(1));
-
-
-
-            	while (1) {
-        		
-                std:: string movement;
-                int ch = move_user1(win1);
-                if(ch==27) break;
-                movement=std::to_string(ch) ;
-                movement=fillZeros(movement.size(),4)+"G"+movement;
-                int nwrite = write(SocketFD, movement.c_str(), movement.size());
-                // }
-                // thread(move_user1,std::ref(win1)).detach();
-                // std::this_thread::sleep_for(std::chrono::seconds(100));
-        		// msg="sali";
-        		// msg=	fillZeros(msg.size(),4)+"C"+msg;
-        		// }
-        	}
-            endwin();
-
-        }else if (op == "E"){ // protocolo for End
-
-            //Protocolo:
-            msg =   std::string("0000") +       // size of msg(4)
-                "E";                // E
-
-        }
-        else{ // this can be better =/
-            msg = "0000P";
-            std::cout << "error action no found, enter other\n ";
-            continue;
-        }
-        int nwrite = write(SocketFD, msg.c_str(), msg.size());
-        if(op=="E"){
-            return;
-        }
-
 }
+
+void write2(int  SocketFD) {
+	ClientProtocol CP;
+	std::string msg , aux = "", op = "";
+	int dif = 0;
+
+    while (op!="E") {
+	printMenu();
+        std::cin >> op;
+	if(op.size()==1 && CP.getMsg(op[0],msg)){
+		int nwrite = write(SocketFD, msg.c_str(), msg.size());
+	} else {
+
+		if (op == "G")   { //protocolo for Chat
+
+		    initscr();                      /* Start curses mode            */
+		    start_color();                  /* Start the color functionality */
+		    cbreak();
+		    keypad(stdscr, TRUE);           /* I need that nifty F1         */
+		    noecho();
+		    init_pair(1, COLOR_CYAN, COLOR_BLACK); /* Line buffering disabled, Pass on*/
+		    init_win_params(win1);
+		    print_win_params(win1);
+
+		    init_win_params(win2);
+		    print_win_params(win2);
+
+		    attron(COLOR_PAIR(1));
+		    refresh();  
+		    attroff(COLOR_PAIR(1));
+			while (1) {
+				
+			std:: string movement;
+			int ch = move_user1(win1);
+			if(ch==27) break;
+			movement=std::to_string(ch) ;
+			movement=fillZeros(movement.size(),4)+"G"+movement;
+			int nwrite = write(SocketFD, movement.c_str(), movement.size());
+			// }
+			// thread(move_user1,std::ref(win1)).detach();
+			// std::this_thread::sleep_for(std::chrono::seconds(100));
+				// msg="sali";
+				// msg=	fillZeros(msg.size(),4)+"C"+msg;
+				// }
+			}
+		    endwin();
+		} else {
+		    std::cout << "Error: Action not found, enter other.\n ";
+		    continue;
+		}
+	}
+}
+
+	return ;
 }
 /**Program Game********************************************************************/
 void bullet(WIN  & p_win,WIN  & p_win2)
@@ -319,7 +282,7 @@ int move_user1(WIN & win){
                     ++win.starty;
                     create_box(win, TRUE);
                     break;
-            case 111:       
+            case KEY_BUL:
                     bullet(win,win2);
                     // bullet(win);
                     break;
@@ -339,8 +302,7 @@ void move_user2(WIN & win2,int ch){
     // while((ch = getch()) != 122)
     // {
         
-        switch(ch)
-        {   case KEY_LEFT:
+        switch(ch) {   case KEY_LEFT:
                     create_box(win2, FALSE);
                     --win2.startx;
                     create_box(win2, TRUE);
@@ -360,14 +322,14 @@ void move_user2(WIN & win2,int ch){
                     ++win2.starty;
                     create_box(win2, TRUE);
                     break;
-            case 111:
+            case KEY_BUL:
                     bullet(win2,win1);
                     // bullet(win2);
                     break;
-            case 26:
+            case KEY_ESC:
                     endwin();
                     break;
-        }       
+        }
 
     // std::cout<<" "<<ch<<std::endl;
     // }
@@ -389,11 +351,11 @@ void init_win_params(WIN & p_win){
         p_win.border.bl = '+';
         p_win.border.br = '+';
 }
+
 void print_win_params(WIN & p_win){
 }
 
 void create_box(WIN  & p_win, bool flag){
-        
         int i, j;
         int x, y, w, h;
         x = p_win.startx;
@@ -433,59 +395,16 @@ void delete_box(WIN  & p_win){
         move( y+5,x ); addstr("                ");
         move( y+6,x ); addstr("                ");
         move( y+7,x ); addstr("                ");
-
         refresh();
 }
 
-
 /*MAIN*******************************************/
 int main(){
-	int n;
-	
-	SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-	if (-1 == SocketFD)
-	{
-		perror("cannot create socket");
-		exit(EXIT_FAILURE);
-	}
-
-	memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
-
-	stSockAddr.sin_family = AF_INET;
-	stSockAddr.sin_port = htons(1200);
-	Res = inet_pton(AF_INET, "192.168.0.7", &stSockAddr.sin_addr);
-
-	if (0 > Res) {
-		perror("error: first parameter is not a valid address family");
-		close(SocketFD);
-		exit(EXIT_FAILURE);
-	} else if (0 == Res) {
-		perror("char string (second parameter does not contain valid ipaddress");
-		close(SocketFD);
-		exit(EXIT_FAILURE);
-	} if (-1 == connect(SocketFD, (const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in))) {
-		perror("connect failed");
-		close(SocketFD);
-		exit(EXIT_FAILURE);
-	}
-       
-
-	T.resize(2);
-	T[0]=(std::thread(read2, SocketFD, buffer));
-	T[1]=(std::thread(write2, SocketFD));
-    T[0].join();
-	T[1].join();
-	shutdown(SocketFD, SHUT_RDWR);
-	close(SocketFD);
-	if(T[1].joinable()){
-		perror("server is close");
-		exit(EXIT_FAILURE);
-	}
+	int port;
+	cout << "Port: ";
+	cin >> port;
+	MainConnection MC("10.0.1.3",port);
+	ClientServerModel CSM(&MC);
+	CSM.run(read2,write2);
 	return 0;
 }
-
-
-
-
-
