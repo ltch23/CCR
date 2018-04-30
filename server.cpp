@@ -114,27 +114,42 @@ void read2(int ConnectFD){
 				std::cout << "Login: " << buffer << std::endl;
 			} else if (action == "C"){ //protocolo for chating
 				std::string username = "";
+				find_str(ConnectFD,username); //username has nickname who send to mssg 
 
-				find_str(ConnectFD,username);
+				n = read(ConnectFD, buffer, 2); //reading a size of the other client
+				int size_othername=atoi(buffer);
+				bzero(buffer, 2);
+
+				n = read(ConnectFD, buffer, size_othername); //reading a nickname the other client
+				std::string othername(buffer);
+				bzero(buffer, size_othername);
 
 				int size_msg= size_txt;// size has the size the real mssg
 				// cout << "size_msg: " << size_msg<<endl;
 				n = read(ConnectFD, buffer, size_msg);
 				std::string msg(buffer);
-				
 				bzero(buffer,size_msg);
+				if(find_nick(othername)==false){ //check if othername exists
+					std::string err = "nickname not found, enter other\n";
+					write2(ConnectFD, err.c_str(), action);
+					continue;
+				}	
 				
-                msg =fillZeros(msg.size(),4)+"R"+fillZeros(username.size(),2)+username+msg; //msg final
-                std::map<std::string, int>::iterator it;
-                if(login){
-                    for (it = clients.begin(); it != clients.end(); it++)
-                        if (it->second != ConnectFD){
-                            int nwrite= write(it->second, msg.c_str(), msg.size());
-                            std::cout<<msg+" -> "+it->first<<std::endl;
-                        }
-                }   
+				int otherConnectFD = clients.find(othername)->second; //finding socket number the other client for send to mssg 
+				if (otherConnectFD < 0){
+					perror("error in nickname");
+				}
+				
+				msg = username+": "+msg; //msg final
+				std::cout<<msg+" -> "+othername<<std::endl;
+				if(login){
+				write2(otherConnectFD, msg, action);
+				} else {
+					msg="no estas conectado\n";
+					write2(otherConnectFD, msg, action);
+				}
 
-			}else if (action == "G"){ //protocolo for chating
+			} else if (action == "G"){ //protocolo for chating
 				std::string username = "";
 
 				find_str(ConnectFD,username);
@@ -146,18 +161,17 @@ void read2(int ConnectFD){
 				
 				bzero(buffer,size_msg);
 				
-                msg =fillZeros(msg.size(),4)+"N"+fillZeros(username.size(),2)+username+msg; //msg final
-                std::map<std::string, int>::iterator it;
-                if(login){
-                    for (it = clients.begin(); it != clients.end(); it++)
-                        if (it->second != ConnectFD){
-                            int nwrite= write(it->second, msg.c_str(), msg.size());
-                            std::cout<<msg+" -> "+it->first<<std::endl;
-                        }
-                }   
+				msg =fillZeros(msg.size(),4)+"N"+fillZeros(username.size(),2)+username+msg; //msg final
+				std::map<std::string, int>::iterator it;
+				if(login){
+				    for (it = clients.begin(); it != clients.end(); it++)
+					if (it->second != ConnectFD){
+					    int nwrite= write(it->second, msg.c_str(), msg.size());
+					    std::cout<<msg+" -> "+it->first<<std::endl;
+					}
+				}   
 
-			}
-			else if (action == "E"){//protocol for End
+			} else if (action == "E"){//protocol for End
 				std::vector<std::string> V;
 				for (auto it=clients.begin();it!=clients.end();it++){
 					if(it->second==ConnectFD){
@@ -171,8 +185,62 @@ void read2(int ConnectFD){
 				//std::cout << "Respondiendo Salida" <<  std::endl;
 				close(ConnectFD);
 				return;
-			}
-			else {// this is can be better, you can do it =)
+			} else if (action == "F"){
+				sendFile+="D";
+				std::cout << sendFile << "\n";
+				std::string username = "";
+				find_str(ConnectFD,username); //username has nickname who send to mssg 
+
+				n = read(ConnectFD, buffer, 2); //reading a size of the other client
+				std:: cout << std::string(buffer) << "\n";
+				int size_othername=atoi(buffer);
+				bzero(buffer, 2);
+
+				n = read(ConnectFD, buffer, size_othername); //reading a nickname the other client
+				std::string othername(buffer);
+				std:: cout << std::string(buffer) << "\n";
+				bzero(buffer, size_othername);
+				int size_msg= size_txt;// size has the size the real mssg
+
+				n = read(ConnectFD, buffer, size_msg);
+				std::string msg(buffer);
+				std::cout << msg << "\n";
+				bzero(buffer,size_msg);
+				n = read(ConnectFD, buffer, 4);
+				std::string str_size_file(buffer);
+				std::cout << str_size_file << "\n";
+				int size_file=atoi(buffer);
+				bzero(buffer,4);
+				char msg_file[size_file];
+				for (int i=0;i<size_file;i++){
+					n=read(ConnectFD,buffer,1);
+					msg_file[i]=buffer[0];
+					bzero(buffer,1);
+				}
+				if(find_nick(othername)==false){ //check if othername exists
+					//std::cout << "PASE" << std::endl;
+					std::string err = "nickname not found, enter other\n";
+					write2(ConnectFD, err.c_str(), action);
+					continue;
+				}	
+				sendFile+=fillZeros(username.size(),2)+username+msg+str_size_file;
+				std::cout << sendFile << std::endl;
+				int otherConnectFD = clients.find(othername)->second; //finding socket number the other client for send to mssg 
+				if (otherConnectFD < 0){
+					perror("error in nickname");
+					continue;
+				}
+				std::cout<< msg << " -> "+othername<<std::endl;
+				if(login){
+					write2(otherConnectFD, sendFile, "D");
+					write(otherConnectFD,msg_file,size_file);
+				} else {
+					sendFile="no estas logueado\n";
+					write2(otherConnectFD, sendFile, "C");
+				}
+				
+			//here file
+			} else {// this is can be better, you can do it =)
 				std::cout << "error in action, msg bad\n";
 			}
 
@@ -187,8 +255,10 @@ bool write2(int ConnectFD, std::string mssg, std::string act){
 		mssg = fillZeros(mssg.size(),4)+"R" +mssg;
 		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
 		return true;
-	} 
-	else if(act=="G"){
+	} else if (act=="D"){
+		int nwrite= write(ConnectFD, mssg.c_str(),mssg.size());//std::cout << nwrite << "\n";
+		return true;
+	} else if(act=="G"){
 		mssg = fillZeros(mssg.size(),4)+"N" +mssg;
 		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
 		return true;	

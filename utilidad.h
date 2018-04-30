@@ -54,16 +54,16 @@ bool readFileContent(std::string &filename, std::string &file){
 }
 
 int indB64(char c){
-	if(c>'A' && c<'Z'){
+	if(c>='A' && c<='Z'){
 		return c-'A';
 	}
-	if(c>'a' && c<'z'){
+	if(c>='a' && c<='z'){
 		return c-'a'+1+'Z'-'A';
 	}
-	if(c>'0' && c<'9'){
+	if(c>='0' && c<='9'){
 		return c-'0'+'z'-'a'+2+'Z'-'A';
 	}
-	if(c=='='){
+	if(c=='+'){
 		return 62;
 	}
 	if(c=='/'){
@@ -89,7 +89,7 @@ std::string readB64Content(std::string &b64){
 			msg.push_back(((indB64(b64[i-1])&0x3)<<6)+(indB64(b64[i])));
 		}
 	}
-	if(i<b64.size()){
+	if((i%4)){
 		int j=i%4;
 		int A[4];
 		for (int k=0;k<j;k++){
@@ -99,5 +99,15 @@ std::string readB64Content(std::string &b64){
 		msg.push_back(((A[1]&0xf)<<4)+((A[2]&0x3c)>>2));
 	}
 	return msg;
+}
+
+void writeArchiveB64(std::string &filename, const char* msg_file){
+	FILE *newFile=fopen(filename.c_str(),"w");
+	std::string b64(msg_file);
+	std::string content=readB64Content(b64);
+	for (int i=0;i<content.size();i++){
+		fprintf(newFile, "%c", content[i]);
+	}
+	fclose(newFile);
 }
 

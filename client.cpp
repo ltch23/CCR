@@ -95,71 +95,40 @@ void read2(int SocketFD) {
 			bzero(buffer, 1); //equal to the before
 
 			if (action == "N"){ // Responsive when is Printing or Chating or error in Login
-				
-                // char msg[size_msg+1];
-                // n = read(SocketFD, msg, size_msg);
-                // msg[size_msg]=0;
-                // int a = atoi(msg);
+					
+				// char msg[size_msg+1];
+				// n = read(SocketFD, msg, size_msg);
+				// msg[size_msg]=0;
+				// int a = atoi(msg);
 
-                // move_user2(win2,a);
-
-
-                n = read(SocketFD, buffer, 2); //reading 1 bytes
-                int size_user=atoi(buffer);
-                bzero(buffer, 2); //equal to the before
-
-                char user[size_user+1];
-                n = read(SocketFD, user, size_user);
-                user[size_user]=0;
-                // std::cout<<"user: "<<user<<std::endl;
-                // findWIN(string(user), win2);
-                char msg[size_msg+1];
-                n = read(SocketFD, msg, size_msg);
-                msg[size_msg]=0;
-                int a = atoi(msg);
-                // std::cout<<"msg: "<<msg<<std::endl;
-                // printf ("[%s]\n", msg);
-                
-                move_user2(win2,a);
+				// move_user2(win2,a);
 
 
+				n = read(SocketFD, buffer, 2); //reading 1 bytes
+				int size_user=atoi(buffer);
+				bzero(buffer, 2); //equal to the before
+
+				char user[size_user+1];
+				n = read(SocketFD, user, size_user);
+				user[size_user]=0;
+				// std::cout<<"user: "<<user<<std::endl;
+				// findWIN(string(user), win2);
+				char msg[size_msg+1];
+				n = read(SocketFD, msg, size_msg);
+				msg[size_msg]=0;
+				int a = atoi(msg);
+				// std::cout<<"msg: "<<msg<<std::endl;
+				// printf ("[%s]\n", msg);
+
+				move_user2(win2,a);
+			} else if(action=="R"){
+				Cl_ReadMsg(SocketFD, size_msg);
+			} else if(action=="D"){
+				Cl_Download(SocketFD, size_msg);
 			}
-            else if(action=="R"){
 
-
-                 n = read(SocketFD, buffer, 2); //reading 1 bytes
-                int size_user=atoi(buffer);
-                bzero(buffer, 2); //equal to the before
-
-                char user[size_user+1];
-                n = read(SocketFD, user, size_user);
-                user[size_user]=0;
-                // std::cout<<"user: "<<user<<std::endl;
-                // findWIN(string(user), win2);
-                char msg[size_msg+1];
-                n = read(SocketFD, msg, size_msg);
-                msg[size_msg]=0;
-               
-
-                // printf ("[%s]\n", msg);
-            }
-
-			// n = read(SocketFD, buffer, atoi(buffer));
-			
 		} while (n == 0);
 	}
-}
-
-void printMenu(){
-        std::cout << "\n------Menu (action)-----\n"
-             << "P -> Print list of user on the chat \n"
-             << "L -> Login to the char\n"
-             << "C -> Send a msg to a user on the chat\n"
-             << "E -> End chat or logout from chat\n"
-             << "F -> Send a file from a user to another user\n"
-             << "G -> Joint to the game\n"
-             << "----------------------------\n"
-             << std::endl;
 }
 
 void write2(int  SocketFD) {
@@ -167,52 +136,53 @@ void write2(int  SocketFD) {
 	std::string msg , aux = "", op = "";
 	int dif = 0;
 
-    while (op!="E") {
-	printMenu();
-        std::cin >> op;
-	if(op.size()==1 && CP.getMsg(op[0],msg) && msg!=""){
-		int nwrite = write(SocketFD, msg.c_str(), msg.size());
-	} else {
-
-		if (op == "G")   { //protocolo for Chat
-
-		    initscr();                      /* Start curses mode            */
-		    start_color();                  /* Start the color functionality */
-		    cbreak();
-		    keypad(stdscr, TRUE);           /* I need that nifty F1         */
-		    noecho();
-		    init_pair(1, COLOR_CYAN, COLOR_BLACK); /* Line buffering disabled, Pass on*/
-		    init_win_params(win1);
-		    print_win_params(win1);
-
-		    init_win_params(win2);
-		    print_win_params(win2);
-
-		    attron(COLOR_PAIR(1));
-		    refresh();  
-		    attroff(COLOR_PAIR(1));
-			while (1) {
-				
-			std:: string movement;
-			int ch = move_user1(win1);
-			if(ch==27) break;
-			movement=std::to_string(ch) ;
-			movement=fillZeros(movement.size(),4)+"G"+movement;
-			int nwrite = write(SocketFD, movement.c_str(), movement.size());
-			// }
-			// thread(move_user1,std::ref(win1)).detach();
-			// std::this_thread::sleep_for(std::chrono::seconds(100));
-				// msg="sali";
-				// msg=	fillZeros(msg.size(),4)+"C"+msg;
-				// }
-			}
-		    endwin();
+	while (op!="E") {
+		CP.printMenu();
+		std::cin >> op;
+		if(op.size()==1 && CP.getMsg(op[0],msg) && msg!=""){
+			cout << msg << endl;
+			int nwrite = write(SocketFD, msg.c_str(), msg.size());
 		} else {
-		    std::cout << "Error: Action does not work.\n ";
-		    continue;
+
+			if (op == "G")   { //protocolo for Chat
+
+				initscr();                      /* Start curses mode            */
+				start_color();                  /* Start the color functionality */
+				cbreak();
+				keypad(stdscr, TRUE);           /* I need that nifty F1         */
+				noecho();
+				init_pair(1, COLOR_CYAN, COLOR_BLACK); /* Line buffering disabled, Pass on*/
+				init_win_params(win1);
+				print_win_params(win1);
+
+				init_win_params(win2);
+				print_win_params(win2);
+
+				attron(COLOR_PAIR(1));
+				refresh();  
+				attroff(COLOR_PAIR(1));
+				while (1) {
+					
+					std:: string movement;
+					int ch = move_user1(win1);
+					if(ch==27) break;
+					movement=std::to_string(ch) ;
+					movement=fillZeros(movement.size(),4)+"G"+movement;
+					int nwrite = write(SocketFD, movement.c_str(), movement.size());
+					// }
+					// thread(move_user1,std::ref(win1)).detach();
+					// std::this_thread::sleep_for(std::chrono::seconds(100));
+						// msg="sali";
+						// msg=	fillZeros(msg.size(),4)+"C"+msg;
+						// }
+				}
+				endwin();
+			} else {
+				std::cout << "Error: Action does not work.\n ";
+				continue;
+			}
 		}
 	}
-}
 
 	return ;
 }
