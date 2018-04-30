@@ -148,13 +148,10 @@ void read2(int SocketFD, char *buffer) {
                 std::map<std::string, WIN>::iterator it;
                 // std::cout<<std::endl;
                 for (it = players.begin(); it != players.end(); it++){
-                    
-                    // std::cout<<it->first<<"-"<<&it->second<<std::endl;   
-                // init_win_params(players[string(msg)]);
-                // print_win_params(players[string(msg)]);
-                
+                       init_win_params(it->second);
+                        print_win_params(it->second);
+                    }
 
-            }
 
                 // std::cout<<std::endl;
 
@@ -266,25 +263,25 @@ void write2(int  SocketFD) {
             keypad(stdscr, TRUE);           /* I need that nifty F1         */
             noecho();
             init_pair(1, COLOR_CYAN, COLOR_BLACK); /* Line buffering disabled, Pass on*/
-         
+            // create_box(players[nickname], TRUE);
+
+            attron(COLOR_PAIR(1));
+            refresh();  
+            attroff(COLOR_PAIR(1));
+
             // std::cout<<"write"<<std::endl; 
             std::map<std::string, WIN>::iterator it;
             // std::cout<<std::endl;
             for (it = players.begin(); it != players.end(); it++){
                 
-                // std::cout<<it->first<<"-"<<&it->second<<std::endl;   
-                init_win_params(players[string(msg)]);
-                print_win_params(players[string(msg)]);
+                   init_win_params(it->second);
+                    print_win_params(it->second);
+
                 
 
             }
 
-            // create_box(players[nickname], TRUE);
-
-            // attron(COLOR_PAIR(1));
-            // refresh();  
-            // attroff(COLOR_PAIR(1));
-
+          
 
                 std:: string movement;
             while (1){
@@ -323,43 +320,43 @@ void write2(int  SocketFD) {
 }
 }
 /**Program Game********************************************************************/
-// void bullet(WIN  * p_win,WIN  * p_win2)
-// // void bullet(WIN  & p_win)
-// {
-//     int k,m,count=0;
-//     int x, y, w, h;
-//     int x2_inicial, y2_inicial, x2_final;
+void bullet(WIN  & p_win,WIN  & p_win2)
+// void bullet(WIN  & p_win)
+{
+    int k,m,count=0;
+    int x, y, w, h;
+    int x2_inicial, y2_inicial, x2_final;
     
-//     x = p_win.startx;
-//     y = p_win.starty;
-//     w = p_win.width;
-//     h = p_win.height;
+    x = p_win.startx;
+    y = p_win.starty;
+    w = p_win.width;
+    h = p_win.height;
     
-//     x2_inicial = p_win2.startx;
-//     y2_inicial = p_win2.starty;
+    x2_inicial = p_win2.startx;
+    y2_inicial = p_win2.starty;
 
-//     x2_final = x2_inicial + w;
-//     m=x+w/2;
+    x2_final = x2_inicial + w;
+    m=x+w/2;
 
-//     for (k=y-1;k>0;k--){
-//         move (k,m ); addstr("o");
-//             count++;
-//         if(k == y2_inicial){
-//             for(int i=x2_inicial; i<x2_final; i++)
-//                 if(m==i){
-//                     delete_box(p_win2);
-//                     break;
-//                 }
-//         }
-//     }
+    for (k=y-1;k>0;k--){
+        move (k,m ); addstr("o");
+            count++;
+        if(k == y2_inicial){
+            for(int i=x2_inicial; i<x2_final; i++)
+                if(m==i){
+                    delete_box(p_win2);
+                    break;
+                }
+        }
+    }
+    sleep(2);
 
+    for (k=y-1;k>y-1-count;k--){
+    // std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        move( k,m );addstr(" ");
+    }    
 
-//     for (k=y-1;k>y-1-count;k--){
-//     // std::this_thread::sleep_for(std::chrono::milliseconds(50));
-//         move( k,m );addstr(" ");
-//     }    
-
-// }
+}
 // int move_user1(){
 
 //     int ch = getch();
@@ -369,7 +366,7 @@ void write2(int  SocketFD) {
 void move_user2(WIN & win2,int ch){
 
     // cout<<ch<<endl;
-    create_box(win2, TRUE);
+    // create_box(win2, TRUE);
     // while((ch = getch()) != 122)
     // {
         
@@ -394,11 +391,15 @@ void move_user2(WIN & win2,int ch){
                     ++win2.starty;
                     create_box(win2, TRUE);
                     break;
-            case 111:
-                    // bullet(win2,win1);
+            case 111:{
+                    std::map<std::string, WIN>::iterator it;
+                    for (it = players.begin(); it != players.end(); it++)
+                        if( &(it->second) != &win2)
+                            bullet(win2,it->second);
+                        
                     // bullet(win2);
-                    break;
-            case 26:
+                    break;}
+            case 27:
                     endwin();
                     break;
         }       
@@ -487,7 +488,7 @@ int main(){
     memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
     stSockAddr.sin_family = AF_INET;
-    stSockAddr.sin_port = htons(1200);
+    stSockAddr.sin_port = htons(1201);
     Res = inet_pton(AF_INET, "127.0.0.1", &stSockAddr.sin_addr);
 
     if (0 > Res) {
