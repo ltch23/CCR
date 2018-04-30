@@ -80,6 +80,22 @@ void read2(int ConnectFD){
 		do{
 			n = read(ConnectFD, buffer, 4);
 			if(n==0){
+				std::string username = "";
+				find_str(ConnectFD,username);
+				std::string msg="";
+				
+                msg =fillZeros(username.size(),4)+"E"+username; //msg final
+                std::map<std::string, int>::iterator it;
+                if(login){
+                    for (it = clients.begin(); it != clients.end(); it++)
+                        // if (it->second != ConnectFD)
+                    	{
+                            int nwrite= write(it->second, msg.c_str(), msg.size());
+                            std::cout<<msg+" -> "+it->first<<std::endl;
+                        }
+                }   
+
+				std::cout<<ConnectFD<<" salio"<<std::endl;
 				std::vector<std::string> V;
 				for (auto it=clients.begin();it!=clients.end();it++){
 					if(it->second==ConnectFD){
@@ -89,6 +105,13 @@ void read2(int ConnectFD){
 				for (int i=0;i<V.size();i++){
 					clients.erase(V[i]);
 				}
+
+
+
+
+
+
+
 				close(ConnectFD);
 				return;
 			}
@@ -340,7 +363,7 @@ int main(void){
 	memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
 	stSockAddr.sin_family = AF_INET;
-	stSockAddr.sin_port = htons(1201);
+	stSockAddr.sin_port = htons(1200);
 	stSockAddr.sin_addr.s_addr = INADDR_ANY;
 
 	if(-1 == bind(SocketFD,(const struct sockaddr *)&stSockAddr, sizeof(struct sockaddr_in))){

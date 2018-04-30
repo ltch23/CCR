@@ -34,6 +34,7 @@ int Res; //
 int SocketFD ; //
 char buffer[20]; 
 std::string nickname="";
+int nummber_lives=3;
 
 /**Variables and FUnctions for Game**********************/
 
@@ -155,6 +156,19 @@ void read2(int SocketFD, char *buffer) {
 
                 // std::cout<<std::endl;
 
+
+            }else if(action=="E"){
+
+                char msg[size_msg+1];
+                n = read(SocketFD, msg, size_msg);
+                msg[size_msg]=0;
+                std::map<std::string, WIN>::iterator it;
+                for (it = players.begin(); it != players.end(); it++)
+                    if(string(msg)==it->first){
+                        delete_box(it->second);
+                        // players.erase(it->first);
+                                // // std::cout<<"read"<<std::endl;
+                    }
 
             } else if (action == "H"){ 
 
@@ -290,12 +304,14 @@ void write2(int  SocketFD) {
                 // int ch=i;
                 // std::cout<<"entre"<<std::endl;
                 // int ch = getch();
-                // if(ch==27) break;
                 movement= std::to_string(ch);
                 movement= fillZeros(movement.size(),4)+"G"+movement;
                 int nwrite = write(SocketFD, movement.c_str(), movement.size());
-            
+                
+                if(ch==27 /*or nummber_lives==0*/)
+                    break;
             }
+
             // endwin();
 
         }else if (op == "E"){ // protocolo for End
@@ -311,6 +327,8 @@ void write2(int  SocketFD) {
             int nwrite = write(SocketFD, msg.c_str(), msg.size());
 
             continue;
+
+
         }
         // int nwrite = write(SocketFD, msg.c_str(), msg.size());
         if(op=="E"){
@@ -349,13 +367,12 @@ void bullet(WIN  & p_win,WIN  & p_win2)
                 }
         }
     }
-    sleep(2);
+    // sleep(2);
 
     for (k=y-1;k>y-1-count;k--){
     // std::this_thread::sleep_for(std::chrono::milliseconds(50));
         move( k,m );addstr(" ");
-    }    
-
+    }
 }
 // int move_user1(){
 
@@ -384,7 +401,7 @@ void move_user2(WIN & win2,int ch){
             case KEY_UP:
                     create_box(win2, FALSE);
                     --win2.starty;
-                    create_box(win2, TRUE);
+                    create_box(win2, TRUE); 
                     break;
             case KEY_DOWN:
                     create_box(win2, FALSE);
@@ -400,7 +417,7 @@ void move_user2(WIN & win2,int ch){
                     // bullet(win2);
                     break;}
             case 27:
-                    endwin();
+                    delete_box(win2);
                     break;
         }       
 
@@ -468,7 +485,7 @@ void delete_box(WIN  & p_win){
         move( y+5,x ); addstr("                ");
         move( y+6,x ); addstr("                ");
         move( y+7,x ); addstr("                ");
-
+        nummber_lives--;
         refresh();
 }
 
@@ -488,7 +505,7 @@ int main(){
     memset(&stSockAddr, 0, sizeof(struct sockaddr_in));
 
     stSockAddr.sin_family = AF_INET;
-    stSockAddr.sin_port = htons(1201);
+    stSockAddr.sin_port = htons(1200);
     Res = inet_pton(AF_INET, "127.0.0.1", &stSockAddr.sin_addr);
 
     if (0 > Res) {
