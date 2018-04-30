@@ -170,7 +170,7 @@ void write2(int  SocketFD) {
     while (op!="E") {
 	printMenu();
         std::cin >> op;
-	if(op.size()==1 && CP.getMsg(op[0],msg)){
+	if(op.size()==1 && CP.getMsg(op[0],msg) && msg!=""){
 		int nwrite = write(SocketFD, msg.c_str(), msg.size());
 	} else {
 
@@ -208,7 +208,7 @@ void write2(int  SocketFD) {
 			}
 		    endwin();
 		} else {
-		    std::cout << "Error: Action not found, enter other.\n ";
+		    std::cout << "Error: Action does not work.\n ";
 		    continue;
 		}
 	}

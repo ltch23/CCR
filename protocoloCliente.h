@@ -19,9 +19,35 @@ std::string Cl_chat(){//MENSAJES SIN SALTOS DE LINEA
 	    std::cin.ignore();
 	    std::string msg;
 	    getline(std::cin,msg); //scan with spaces
-		return    fillZeros(msg.size(),4)+    // size
+            return    fillZeros(msg.size(),4)+    // size
 		"C"+                // C
 		msg;                // msg
+}
+
+std::string Cl_file(){
+
+	std::string file="",filename="",nickname="";
+	std::cout << "enter nickname to send file: ";
+	std::cin.ignore(); 
+	getline(std::cin, nickname); // scann with spaces
+	std::cout << "enter filename: ";
+	getline(std::cin, filename); // scann with spaces
+	if(!readFileContent(filename,file)){
+		std::cout << "the file doesn't exist\n";
+		return "";
+	}
+	if(file.size()>9999){
+		std::cout << "the file is very large(>9999)\n";
+		return "";
+	}
+	std::cout << readB64Content(file) << std::endl;
+	return	fillZeros(filename.size(),4) +	// size of filename(4)
+		"F" +				// F
+		fillZeros(nickname.size(),2) +	// nickname size(2)
+		nickname +			// nickaname
+		filename +			// filename
+		fillZeros(file.size(),4) +	// file's size(4)
+		file;				// file
 }
 
 std::string Cl_endConnection(){
@@ -38,6 +64,7 @@ struct ClientProtocol{
 		F['L']=Cl_login;
 		F['C']=Cl_chat;
 		F['E']=Cl_endConnection;
+		F['F']=Cl_file;
 	}
 	bool getMsg(char operation, std::string& msg){
 		auto it=F.find(operation);
