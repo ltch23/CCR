@@ -41,7 +41,7 @@ typedef std::string (*pfunc)();
 		getline(std::cin, nickname); // scann with spaces
 		std::cout << "enter filename: ";
 		getline(std::cin, filename); // scann with spaces
-		if(!readFileContent(filename,file)){
+		if(!readFileContentToB64(filename,file)){
 			std::cout << "the file doesn't exist\n";
 			return "";
 		}
@@ -105,7 +105,7 @@ struct ClientProtocol{
 		     << "C -> Send a msg to a user on the chat\n"
 		     << "E -> End chat or logout from chat\n"
 		     << "F -> Send a file from a user to another user\n"
-		     << "G -> Joint to the game\n"
+		     << "G -> Join to the game\n"
 		     << "----------------------------\n"
 		     << std::endl;
 	}

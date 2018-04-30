@@ -10,7 +10,7 @@ const char B64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		 "abcdefghijklmnopqrstuvwxyz"
 		 "0123456789+/";
 
-bool readFileContent(std::string &filename, std::string &file){
+bool readFileContentToB64(std::string &filename, std::string &file){
 	FILE *pFile;
 	if(!(pFile=fopen(filename.c_str(),"rb"))){
 		std::cout << "the file does not exist\n" << std::endl;

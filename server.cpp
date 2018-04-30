@@ -105,7 +105,7 @@ void read2(int ConnectFD){
 				
 				n = read(ConnectFD, buffer, size_txt);
 				if(find_nick(std::string(buffer)) == true){ // find  a new nickname is equal to other already exists
-					std::string err="nickname already exists, enter other\n";
+					std::string err="nickname already exists, enter other";
 					write2(ConnectFD,err.c_str(),action);
 					continue;
 				}
