@@ -13,31 +13,27 @@
 #include <vector>
 #include <map>
 #include <chrono>
+#include <errno.h>
+#include <ncurses.h>
+#include "utilidad.h"
+#include "juego.h"
 
 /*VARIABLES Y FUNCIONES*/
 
 struct sockaddr_in stSockAddr;
 int SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP),n;
 std::map<std::string,int> clients;
+std::map<std::string, int>::iterator it;
+game Game;
 
 void acceptClient(int ConnectFD);
 bool write2(int ConnectFD,std::string prnt, std::string act);
 void read2(int ConnectFD);
-std::string fillZeros(int aux_size, int nroBytes );
 
 /***********************/
 
-std::string fillZeros(int aux_size, int nroBytes ){ // complete number with zeross  =)
-	std::string aux=std::to_string(aux_size);
-	int dif = nroBytes - int(aux.size());
-	for (int i = 0; i < dif; i++)
-		aux = "0" + aux;
-	return aux;
-}
-
 bool find_nick(std::string st){ //find  a  nickname is equal to st
 
-	std::map<std::string, int>::iterator it;
 	for (it = clients.begin(); it != clients.end(); it++)
 		if(it->first == st){
 			return true;
@@ -47,13 +43,18 @@ bool find_nick(std::string st){ //find  a  nickname is equal to st
 
 void find_str(int id,std::string & st){//return nickanme found their number socket  
 
-	std::map<std::string, int>::iterator it;
 	for (it = clients.begin(); it != clients.end(); it++)
 		if(it->second == id){
 			st=it->first;
 		}
 }
 
+std::string protocoloGame(std::string affect){
+	return fillZeros(affect.size(),4)+"G"+affect+
+		fillZeros(Game.players[affect].startx,4)+
+		fillZeros(Game.players[affect].starty,4)+
+		fillZeros(Game.players[affect].lives,2);
+}
 
 void read2(int ConnectFD){
 	char buffer[256];
@@ -70,10 +71,23 @@ void read2(int ConnectFD){
 				for (auto it=clients.begin();it!=clients.end();it++){
 					if(it->second==ConnectFD){
 						V.push_back(it->first);
+						if(Game.players.find(it->first)!=Game.players.end()){
+							Game.players[it->first].lives=0;
+						}
 					}									
 				}
 				for (int i=0;i<V.size();i++){
+					if(Game.players.find(V[i])!=Game.players.end()){
+						std::string msg=protocoloGame(V[i]);
+						std::cout << msg << "\n";
+						for (auto it=clients.begin();it!=clients.end();it++){
+							if(it->second!=ConnectFD){
+								int nwrite=write(it->second,msg.c_str(),msg.size());
+							}
+						}
+					}
 					clients.erase(V[i]);
+					Game.players.erase(Game.players.find(V[i]));
 				}
 				close(ConnectFD);
 				return;
@@ -88,7 +102,6 @@ void read2(int ConnectFD){
 
 			if (action == "P"){ //Protocolo for Printing
 				std::string prnt="";
-				std::map<std::string, int>::iterator it;
 				for (it = clients.begin(); it != clients.end(); it++){
 					prnt+="username: "+it->first
 					+" value: " + std::to_string(it->second) + "\n";
@@ -112,6 +125,11 @@ void read2(int ConnectFD){
 
 				clients[buffer] = ConnectFD; //adding a newclient
 				std::cout << "Login: " << buffer << std::endl;
+				for (Game.it = Game.players.begin(); Game.it != Game.players.end(); Game.it++){
+					std::string msg=protocoloGame(Game.it->first);
+					int nwrite= write(ConnectFD, msg.c_str(), msg.size());
+					std::cout<<msg+" -> "+it->first<<std::endl;
+				}
 			} else if (action == "C"){ //protocolo for chating
 				std::string username = "";
 				find_str(ConnectFD,username); //username has nickname who send to mssg 
@@ -155,21 +173,46 @@ void read2(int ConnectFD){
 				find_str(ConnectFD,username);
 
 				int size_msg= size_txt;// size has the size the real mssg
-				// cout << "size_msg: " << size_msg<<endl;
 				n = read(ConnectFD, buffer, size_msg);
-				std::string msg(buffer);
-				
+				int msg=atoi(buffer);
 				bzero(buffer,size_msg);
-				
-				msg =fillZeros(msg.size(),4)+"N"+fillZeros(username.size(),2)+username+msg; //msg final
-				std::map<std::string, int>::iterator it;
-				if(login){
-				    for (it = clients.begin(); it != clients.end(); it++)
-					if (it->second != ConnectFD){
-					    int nwrite= write(it->second, msg.c_str(), msg.size());
-					    std::cout<<msg+" -> "+it->first<<std::endl;
+				std::cout << "size: " << char(msg) << std::endl;
+				std::string affect=username;
+				bool propagate=true;
+				if(msg=='N'){
+					n = read(ConnectFD, buffer, 4);
+					int lines=atoi(buffer);
+					bzero(buffer,4);
+					n = read(ConnectFD, buffer, 4);
+					int cols=atoi(buffer);
+					bzero(buffer,4);
+					Game.newPlayer(username,lines,cols);
+					std::cout << username << " join to the game\n";
+				} else if(!Game.move_user2(username,msg,affect)){
+						propagate=false;
+				}
+				if(propagate){
+					if(login){
+						std::string nmsg=protocoloGame(affect),nmsg2;
+						if(msg=='o'){
+							nmsg2= fillZeros(username.size(),4)+
+								"O"+
+								username+
+								fillZeros(Game.players[username].starty-Game.maxy,4);
+						}
+						for (it = clients.begin(); it != clients.end(); it++){
+							int nwrite= write(it->second, nmsg.c_str(), nmsg.size());
+							nwrite= write(it->second, nmsg2.c_str(), nmsg2.size());
+							std::cout<<nmsg+" -> "+it->first<<std::endl;
+							std::cout<<nmsg2+" -> "+it->first<<std::endl;
+						}
 					}
-				}   
+					if(Game.players[affect].lives==0){
+						Game.players.erase(Game.players.find(affect));
+					}
+				}
+				
+				/*msg =fillZeros(msg.size(),4)+"N"+fillZeros(username.size(),2)+username+msg; //msg final*/
 
 			} else if (action == "E"){//protocol for End
 				std::vector<std::string> V;
@@ -181,8 +224,6 @@ void read2(int ConnectFD){
 				for (int i=0;i<V.size();i++){
 					clients.erase(V[i]);
 				}
-				//write2(ConnectFD,"","C");
-				//std::cout << "Respondiendo Salida" <<  std::endl;
 				close(ConnectFD);
 				return;
 			} else if (action == "F"){

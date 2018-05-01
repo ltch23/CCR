@@ -22,10 +22,8 @@
 #include "utilidad.h"
 #include "protocoloCliente.h"
 #include "modelocs.h"
+#include "juego.h"
 
-#define KEY_ESC  26
-#define KEY_BUL  111
- 
 using namespace std;
 
 /**Variables and FUnctions for Soscket cliente conection**********************/
@@ -37,43 +35,15 @@ void write2(int  SocketFD);
 std::vector<std::thread> T; //
 /**Variables and FUnctions for Game**********************/
 
-typedef struct _win_border_struct {
-        chtype  ls, rs, ts, bs,
-                tl, tr, bl, br;
-}WIN_BORDER;
+std::map<string,WIN> players;
+std::map<std::string, WIN>::iterator it;
 
-typedef struct _WIN_struct {
-        int startx, starty;
-        int height, width;
-        WIN_BORDER border;
-}WIN;
-
-WIN win1;
-WIN win2;
-
-
-void init_win_params(WIN & p_win);
-void print_win_params(WIN & p_win);
-void create_box(WIN & win, bool flag);
-int move_user1(WIN & win);
-void move_user2(WIN & win2,int ch);
-// void bullet(WIN & p_win);
-void bullet(WIN  & p_win,WIN  & p_win2);
-
-void delete_box(WIN & p_win);
-
+void create_boxs();
+void create_box(string playerName, bool flag);
+void create_bullet(int x, int y, int h);
+bool playing=false;
 
 /**Program Socket********************************************************************/
-
-
-// void findWIN(std::string st, WIN & p_win){//return nickanme found their number socket  
-
-//     std::map<std::string, WIN>::iterator it;
-//     for (it = players.begin(); it != players.end(); it++)
-//         if(it->first == st){
-//             p_win=it->second;
-//         }
-// }
 
 void read2(int SocketFD) {
 	char buffer[20]; //
@@ -84,6 +54,9 @@ void read2(int SocketFD) {
 		do {
 			n = read(SocketFD, buffer, 4); // Reading first 4 bytes
 			if(n==0){//interrupted connection
+				if(playing){
+					endwin();
+				}
 				cout << "Server: The connection was interrupted" << endl;
 				return;
 			}
@@ -94,33 +67,59 @@ void read2(int SocketFD) {
 			std::string action(buffer);
 			bzero(buffer, 1); //equal to the before
 
-			if (action == "N"){ // Responsive when is Printing or Chating or error in Login
+			if (action == "G"){ // Responsive when is Printing or Chating or error in Login
 					
-				// char msg[size_msg+1];
-				// n = read(SocketFD, msg, size_msg);
-				// msg[size_msg]=0;
-				// int a = atoi(msg);
-
-				// move_user2(win2,a);
-
-
-				n = read(SocketFD, buffer, 2); //reading 1 bytes
-				int size_user=atoi(buffer);
-				bzero(buffer, 2); //equal to the before
-
-				char user[size_user+1];
-				n = read(SocketFD, user, size_user);
-				user[size_user]=0;
-				// std::cout<<"user: "<<user<<std::endl;
-				// findWIN(string(user), win2);
 				char msg[size_msg+1];
 				n = read(SocketFD, msg, size_msg);
 				msg[size_msg]=0;
-				int a = atoi(msg);
-				// std::cout<<"msg: "<<msg<<std::endl;
-				// printf ("[%s]\n", msg);
+				string playerName(msg);
+				// int a = atoi(msg);
+				n = read(SocketFD, buffer,4);
+				string xnum(buffer);
+				bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
+				while(xnum.size()>1 && xnum[0]=='0'){
+					xnum.erase(xnum.begin());
+				}
+				int x=atoi(xnum.c_str());
+				n = read(SocketFD, buffer,4);
+				string ynum(buffer);
+				bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
+				while(ynum.size()>1 && ynum[0]=='0'){
+					ynum.erase(ynum.begin());
+				}
+				int y=atoi(ynum.c_str());
+				n = read(SocketFD, buffer,2);
+				int lives=atoi(buffer);
+				bzero(buffer,2);
+				if(!playing){
+					std::cout<<"user: "<<playerName<<std::endl;
+					std::cout<<x << " "<<y<<std::endl;
+				}
+				WIN newPlayer(x,y,lives);
+				players[playerName]=newPlayer;
+				if(lives==0){
+					players.erase(players.find(playerName));
+				}
+				if(playing){
+					clear();  
+					create_boxs();
+					refresh();
+				}
+			} else if(action=="O"){
+				char msg[size_msg+1];
+				n = read(SocketFD, msg, size_msg);
+				msg[size_msg]=0;
+				string playerName(msg);
+				// int a = atoi(msg);
+				n = read(SocketFD, buffer,4);
+				int h=atoi(buffer);
+				bzero(buffer,4);
+				if(playing){
+					clear();  
+					create_bullet(players[playerName].startx+8,players[playerName].starty-h,h);
+					refresh();
+				}
 
-				move_user2(win2,a);
 			} else if(action=="R"){
 				Cl_ReadMsg(SocketFD, size_msg);
 			} else if(action=="D"){
@@ -140,43 +139,44 @@ void write2(int  SocketFD) {
 		CP.printMenu();
 		std::cin >> op;
 		if(op.size()==1 && CP.getMsg(op[0],msg) && msg!=""){
-			cout << msg << endl;
+			//std::cout << msg << std::endl;
 			int nwrite = write(SocketFD, msg.c_str(), msg.size());
 		} else {
 
-			if (op == "G")   { //protocolo for Chat
-
-				initscr();                      /* Start curses mode            */
-				start_color();                  /* Start the color functionality */
+			if (op == "G") { //protocolo for Chat
+				playing=true;
+				//Start curses mode        
+				initscr(); 
+				// Start the color functionality 
+				start_color();                  
 				cbreak();
-				keypad(stdscr, TRUE);           /* I need that nifty F1         */
+				// I need that nifty F1 
+				keypad(stdscr, TRUE);           
 				noecho();
-				init_pair(1, COLOR_CYAN, COLOR_BLACK); /* Line buffering disabled, Pass on*/
-				init_win_params(win1);
-				print_win_params(win1);
-
-				init_win_params(win2);
-				print_win_params(win2);
-
+				 // Line buffering disabled, Pass on
+				init_pair(1, COLOR_CYAN, COLOR_BLACK);
 				attron(COLOR_PAIR(1));
 				refresh();  
 				attroff(COLOR_PAIR(1));
+				std::string movement=std::to_string(int('N'));
+				movement=fillZeros(movement.size(),4)+"G"+movement
+					+fillZeros(LINES,4)+fillZeros(COLS,4);
+				//std::cout << movement << "\n";
+				int nwrite = write(SocketFD, movement.c_str(), movement.size());
+
 				while (1) {
-					
-					std:: string movement;
-					int ch = move_user1(win1);
-					if(ch==27) break;
+					int ch = getch();//move_user1(win1);
+					//std::cout << (char)ch << std::endl;
 					movement=std::to_string(ch) ;
 					movement=fillZeros(movement.size(),4)+"G"+movement;
 					int nwrite = write(SocketFD, movement.c_str(), movement.size());
-					// }
-					// thread(move_user1,std::ref(win1)).detach();
-					// std::this_thread::sleep_for(std::chrono::seconds(100));
-						// msg="sali";
-						// msg=	fillZeros(msg.size(),4)+"C"+msg;
-						// }
+					if(ch==KEY_ESC){
+						playing=false;
+						break;
+					}
 				}
 				endwin();
+				std::cout << "End Game\n" ;
 			} else {
 				std::cout << "Error: Action does not work.\n ";
 				continue;
@@ -186,186 +186,60 @@ void write2(int  SocketFD) {
 
 	return ;
 }
-/**Program Game********************************************************************/
-void bullet(WIN  & p_win,WIN  & p_win2)
-// void bullet(WIN  & p_win)
-{
-    int k,m,count=0;
-    int x, y, w, h;
-    int x2_inicial, y2_inicial, x2_final;
-    
-    x = p_win.startx;
-    y = p_win.starty;
-    w = p_win.width;
-    h = p_win.height;
-    
-    x2_inicial = p_win2.startx;
-    y2_inicial = p_win2.starty;
 
-    x2_final = x2_inicial + w;
-    m=x+w/2;
-
-    for (k=y-1;k>0;k--){
-        move (k,m ); addstr("o");
-            count++;
-        if(k == y2_inicial){
-            for(int i=x2_inicial; i<x2_final; i++)
-                if(m==i){
-                    delete_box(p_win2);
-                    break;
-                }
-        }
-    }
-
-
-    for (k=y-1;k>y-1-count;k--){
-    // std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        move( k,m );addstr(" ");
-    }    
-
-}
-int move_user1(WIN & win){
-
-   	int ch = getch();
-    create_box(win, TRUE);
-    // while((ch = getch()) != 27)
-    // if((ch = getch()) != 27)
-    // {
-        switch(ch)
-        {   case KEY_LEFT:
-                    create_box(win, FALSE);
-                    --win.startx;
-                    create_box(win, TRUE);
-                    break;
-            case KEY_RIGHT:
-                    create_box(win, FALSE);
-                    ++win.startx;
-                    create_box(win, TRUE);
-                    break;
-            case KEY_UP:
-                    create_box(win, FALSE);
-                    --win.starty;
-                    create_box(win, TRUE);
-                    break;
-            case KEY_DOWN:
-                    create_box(win, FALSE);
-                    ++win.starty;
-                    create_box(win, TRUE);
-                    break;
-            case KEY_BUL:
-                    bullet(win,win2);
-                    // bullet(win);
-                    break;
-
-        }
-        return ch;
-    // }
-    
-    //endwin();
-
+void create_bullet(int x, int y, int h){
+	create_boxs();
+	for (int i=0;i<h;i++){
+		move(y+i,x); addstr("o");
+	}
 }
 
-void move_user2(WIN & win2,int ch){
-
-    // cout<<ch<<endl;
-    create_box(win2, TRUE);
-    // while((ch = getch()) != 122)
-    // {
-        
-        switch(ch) {   case KEY_LEFT:
-                    create_box(win2, FALSE);
-                    --win2.startx;
-                    create_box(win2, TRUE);
-                    break;
-            case KEY_RIGHT:
-                    create_box(win2, FALSE);
-                    ++win2.startx;
-                    create_box(win2, TRUE);
-                    break;
-            case KEY_UP:
-                    create_box(win2, FALSE);
-                    --win2.starty;
-                    create_box(win2, TRUE);
-                    break;
-            case KEY_DOWN:
-                    create_box(win2, FALSE);
-                    ++win2.starty;
-                    create_box(win2, TRUE);
-                    break;
-            case KEY_BUL:
-                    bullet(win2,win1);
-                    // bullet(win2);
-                    break;
-            case KEY_ESC:
-                    endwin();
-                    break;
-        }
-
-    // std::cout<<" "<<ch<<std::endl;
-    // }
+void create_boxs(){
+	for (it=players.begin();it!=players.end();it++){
+		create_box(it->first,false);
+		create_box(it->first,true);
+	}
 }
 
 
-void init_win_params(WIN & p_win){
-
-        p_win.height = 8;
-        p_win.width = 16;
-        p_win.starty = (LINES - p_win.height)/2;
-        p_win.startx = (COLS - p_win.width)/2;
-        p_win.border.ls = '|';
-        p_win.border.rs = '|';
-        p_win.border.ts = '-';
-        p_win.border.bs = '-';
-        p_win.border.tl = '+';
-        p_win.border.tr = '+';
-        p_win.border.bl = '+';
-        p_win.border.br = '+';
-}
-
-void print_win_params(WIN & p_win){
-}
-
-void create_box(WIN  & p_win, bool flag){
-        int i, j;
-        int x, y, w, h;
-        x = p_win.startx;
-        y = p_win.starty;
-        w = p_win.width;
-        h = p_win.height;
-        if(flag == TRUE)
-        {
-                move( y+0,x ); addstr("  ##        ##  ");
-                move( y+1,x ); addstr("    #      #    ");
-                move( y+2,x ); addstr("  ############  ");
-                move( y+3,x ); addstr(" ###  ####  ### ");
-                move( y+4,x ); addstr("################");
-                move( y+5,x ); addstr("# ############ #");
-                move( y+6,x ); addstr("# #          # #");
-                move( y+7,x ); addstr("   ##      ##   ");
-        }
-        else
-               for(j = y; j <= y + h; ++j)
-                        for(i = x; i <= x + w; ++i)
-                                mvaddch(j, i, ' ');
-        refresh();
-}
-
-void delete_box(WIN  & p_win){
-        int i, j;
-        int x, y, w, h;
-        x = p_win.startx;
-        y = p_win.starty;
-        w = p_win.width;
-        h = p_win.height;
-        move( y+0,x ); addstr("                ");
-        move( y+1,x ); addstr("                ");
-        move( y+2,x ); addstr("                ");
-        move( y+3,x ); addstr("                ");
-        move( y+4,x ); addstr("                ");
-        move( y+5,x ); addstr("                ");
-        move( y+6,x ); addstr("                ");
-        move( y+7,x ); addstr("                ");
-        refresh();
+void create_box(std::string playerName, bool flag){
+	int x, y, w, h, v;
+	x = players[playerName].startx;
+	y = players[playerName].starty;
+	w = players[playerName].width;
+	h = players[playerName].height;
+	std::string playerLive = std::to_string(players[playerName].lives);
+	while(playerName.size()<8){
+		playerName+="#";
+	}
+	playerName="#USER: "+playerName.substr(0,8)+"#";
+	playerLive="# #    "+playerLive+"     # #";
+	string mons[8];
+	mons[0]="  ##        ##  ";
+	mons[1]="    #      #    ";
+	mons[2]="  ############  ";
+	mons[3]=" ###  ####  ### ";
+	mons[4]=playerName.c_str();
+	mons[5]="# ############ #";
+	mons[6]=playerLive.c_str();
+	mons[7]="   ##      ##   ";
+	if(flag == TRUE) {
+		for (int i=0;i<h;i++)
+			for (int j=0;j<w;j++)
+				if(x+j<=COLS && x+j>=0){
+					if(y+i>=0 && y+i<=LINES){
+						mvaddch(y+i,x+j,mons[i][j]);
+					}
+				}
+	} else {
+		for(int j = y; j < y + h; ++j)
+			for(int i = x; i < x + w; ++i)
+				if(x+j<=COLS && x>=0){
+					if(y+i>=0 && y+i<=LINES){
+						mvaddch(j, i, ' ');
+					}
+				}
+	}
 }
 
 /*MAIN*******************************************/
