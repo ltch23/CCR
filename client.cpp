@@ -45,81 +45,103 @@ bool playing=false;
 
 /**Program Socket********************************************************************/
 
-void read2(int SocketFD) {
-	char buffer[20]; //
+void Cl_bullet(int SocketFD, int size_msg){
 	int n;
+	char buffer[5];
+	bzero(buffer,5);
+	char msg[size_msg+1];
+	n = read(SocketFD, msg, size_msg); //reading size_msg bytes
+	msg[size_msg]=0;
+	string playerName(msg);
+	n = read(SocketFD, buffer,4); //reading 4 bytes
+	int h=atoi(buffer);
+	bzero(buffer,4); //Zeros for the 4 bytes that was reading
+	if(playing){
+	    clear();
+	    create_bullet(players[playerName].startx+8,players[playerName].starty-h,h);
+	    refresh();
+	}
+}
+
+void Cl_game(int SocketFD, int size_msg){
+	int n;
+	char buffer[5];
+	bzero(buffer,5);
+		
+	char msg[size_msg+1];
+	n = read(SocketFD, msg, size_msg); //reading size_msg bytes
+	msg[size_msg]=0;
+	string playerName(msg);
+	if(!playing)
+		std::cout<<playerName;
+	n = read(SocketFD, buffer,4); //reading 4 bytes
+	string xnum(buffer);
+	if(!playing)
+		std::cout<<xnum;
+	bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
+	while(xnum.size()>1 && xnum[0]=='0'){
+		xnum.erase(xnum.begin());
+	}
+	int x=atoi(xnum.c_str());
+	n = read(SocketFD, buffer,4); //reading 4 bytes
+	string ynum(buffer);
+	if(!playing)
+		std::cout<<ynum;
+	bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
+	while(ynum.size()>1 && ynum[0]=='0'){
+		ynum.erase(ynum.begin());
+	}
+	int y=atoi(ynum.c_str());
+	n = read(SocketFD, buffer,2); //reading 2 bytess 
+	if(!playing)
+		std::cout<<string(buffer) << std::endl;
+	int lives=atoi(buffer);
+	bzero(buffer,2);//Zeros for the 2 bytes that was raeading
+
+	if(lives==0) {
+		if( players.find(playerName)!=players.end()){
+			players.erase(players.find(playerName));
+		}
+	} else {
+		WIN newPlayer(x,y,lives);
+		players[playerName]=newPlayer;
+	}
+	if(playing){
+		clear();  
+		create_boxs();
+		refresh();
+	}
+}
+
+void read2(int SocketFD) {
+	int n;
+	char buffer[5]; //
 	ClientProtocol CP;
 	for (;;){
 		bzero(buffer, 5);
 		do {
 			n = read(SocketFD, buffer, 4); // Reading first 4 bytes
 			if(n==0){//interrupted connection
-				if(playing){
+				if(playing)
 					endwin();
-				}
 				cout << "Server: The connection was interrupted" << endl;
 				return;
 			}
+			if(!playing)
+				std::cout << string(buffer);
 			int size_msg=atoi(buffer);
 			bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
 
 			n = read(SocketFD, buffer, 1); //reading 1 bytes
 			std::string action(buffer);
+			if(!playing)
+				std::cout << action;
 			bzero(buffer, 1); //equal to the before
 
 			if (action == "G"){ // Responsive when is Printing or Chating or error in Login
-					
-				char msg[size_msg+1];
-				n = read(SocketFD, msg, size_msg);
-				msg[size_msg]=0;
-				string playerName(msg);
-				// int a = atoi(msg);
-				n = read(SocketFD, buffer,4);
-				string xnum(buffer);
-				bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
-				while(xnum.size()>1 && xnum[0]=='0'){
-					xnum.erase(xnum.begin());
-				}
-				int x=atoi(xnum.c_str());
-				n = read(SocketFD, buffer,4);
-				string ynum(buffer);
-				bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
-				while(ynum.size()>1 && ynum[0]=='0'){
-					ynum.erase(ynum.begin());
-				}
-				int y=atoi(ynum.c_str());
-				n = read(SocketFD, buffer,2);
-				int lives=atoi(buffer);
-				bzero(buffer,2);
-				if(!playing){
-					std::cout<<"user: "<<playerName<<std::endl;
-					std::cout<<x << " "<<y<<std::endl;
-				}
-				WIN newPlayer(x,y,lives);
-				players[playerName]=newPlayer;
-				if(lives==0){
-					players.erase(players.find(playerName));
-				}
-				if(playing){
-					clear();  
-					create_boxs();
-					refresh();
-				}
+				Cl_game(SocketFD,size_msg);
 			} else if(action=="O"){
-				char msg[size_msg+1];
-				n = read(SocketFD, msg, size_msg);
-				msg[size_msg]=0;
-				string playerName(msg);
-				// int a = atoi(msg);
-				n = read(SocketFD, buffer,4);
-				int h=atoi(buffer);
-				bzero(buffer,4);
-				if(playing){
-					clear();  
-					create_bullet(players[playerName].startx+8,players[playerName].starty-h,h);
-					refresh();
-				}
-
+				Cl_bullet(SocketFD,size_msg);
 			} else if(action=="R"){
 				Cl_ReadMsg(SocketFD, size_msg);
 			} else if(action=="D"){

@@ -50,7 +50,9 @@ void find_str(int id,std::string & st){//return nickanme found their number sock
 }
 
 std::string protocoloGame(std::string affect){
-	return fillZeros(affect.size(),4)+"G"+affect+
+	return fillZeros(affect.size(),4)+
+		"G"+
+		affect+
 		fillZeros(Game.players[affect].startx,4)+
 		fillZeros(Game.players[affect].starty,4)+
 		fillZeros(Game.players[affect].lives,2);
@@ -106,8 +108,8 @@ void read2(int ConnectFD){
 					prnt+="username: "+it->first
 					+" value: " + std::to_string(it->second) + "\n";
 				}
-				std::cout<<"Print:\n"<<prnt<<std::endl; // print has all clients 
 				if(login){
+					//std::cout<<"Print:\n"<<prnt<<std::endl; // print has all clients 
 					write2(ConnectFD,prnt,action); 
 				} else {
 					prnt="no estas logueado";
@@ -119,7 +121,7 @@ void read2(int ConnectFD){
 				n = read(ConnectFD, buffer, size_txt);
 				if(find_nick(std::string(buffer)) == true){ // find  a new nickname is equal to other already exists
 					std::string err="nickname already exists, enter other";
-					write2(ConnectFD,err.c_str(),action);
+					write2(ConnectFD,err,action);
 					continue;
 				}
 
@@ -149,7 +151,7 @@ void read2(int ConnectFD){
 				bzero(buffer,size_msg);
 				if(find_nick(othername)==false){ //check if othername exists
 					std::string err = "nickname not found, enter other\n";
-					write2(ConnectFD, err.c_str(), action);
+					write2(ConnectFD, err, action);
 					continue;
 				}	
 				
@@ -159,9 +161,9 @@ void read2(int ConnectFD){
 				}
 				
 				msg = username+": "+msg; //msg final
-				std::cout<<msg+" -> "+othername<<std::endl;
 				if(login){
-				write2(otherConnectFD, msg, action);
+					std::cout<<msg+" -> "+othername<<std::endl;
+					write2(otherConnectFD, msg, action);
 				} else {
 					msg="no estas conectado\n";
 					write2(otherConnectFD, msg, action);
@@ -176,7 +178,7 @@ void read2(int ConnectFD){
 				n = read(ConnectFD, buffer, size_msg);
 				int msg=atoi(buffer);
 				bzero(buffer,size_msg);
-				std::cout << "size: " << char(msg) << std::endl;
+				std::cout << "Game action: " << msg << std::endl;
 				std::string affect=username;
 				bool propagate=true;
 				if(msg=='N'){
@@ -186,25 +188,30 @@ void read2(int ConnectFD){
 					n = read(ConnectFD, buffer, 4);
 					int cols=atoi(buffer);
 					bzero(buffer,4);
-					Game.newPlayer(username,lines,cols);
-					std::cout << username << " join to the game\n";
+					if(login){
+						Game.newPlayer(username,lines,cols);
+						std::cout << username << " join to the game\n";
+					} else {
+						propagate=false;
+					}
 				} else if(!Game.move_user2(username,msg,affect)){
 						propagate=false;
 				}
 				if(propagate){
 					if(login){
 						std::string nmsg=protocoloGame(affect),nmsg2;
-						if(msg=='o'){
+						if(msg=='o')
 							nmsg2= fillZeros(username.size(),4)+
 								"O"+
 								username+
 								fillZeros(Game.players[username].starty-Game.maxy,4);
-						}
 						for (it = clients.begin(); it != clients.end(); it++){
 							int nwrite= write(it->second, nmsg.c_str(), nmsg.size());
-							nwrite= write(it->second, nmsg2.c_str(), nmsg2.size());
-							std::cout<<nmsg+" -> "+it->first<<std::endl;
-							std::cout<<nmsg2+" -> "+it->first<<std::endl;
+							if(msg=='o'){
+								std::cout<<nmsg2 << " -> " << it->first<<std::endl;
+								nwrite= write(it->second, nmsg2.c_str(), nmsg2.size());
+							}
+							std::cout<< "["<<nmsg<<"] -> " << it->first<<std::endl;
 						}
 					}
 					if(Game.players[affect].lives==0){
@@ -260,7 +267,7 @@ void read2(int ConnectFD){
 				}
 				if(find_nick(othername)==false){ //check if othername exists
 					//std::cout << "PASE" << std::endl;
-					std::string err = "nickname not found, enter other\n";
+					std::string err = "nickname not found, enter other";
 					write2(ConnectFD, err.c_str(), action);
 					continue;
 				}	
@@ -294,16 +301,17 @@ bool write2(int ConnectFD, std::string mssg, std::string act){
 
 	if (act == "P" or act == "C" or act == "L") { // L is when a nickname is repeat 
 		mssg = fillZeros(mssg.size(),4)+"R" +mssg;
+		std::cout << mssg << " -> ?\n";
 		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
 		return true;
 	} else if (act=="D"){
 		int nwrite= write(ConnectFD, mssg.c_str(),mssg.size());//std::cout << nwrite << "\n";
 		return true;
-	} else if(act=="G"){
+	} /*else if(act=="G"){
 		mssg = fillZeros(mssg.size(),4)+"N" +mssg;
 		int nwrite= write(ConnectFD, mssg.c_str(), mssg.size());//std::cout << nwrite << "\n";
 		return true;	
-	}
+	}*/
 	return false;
 }
 
