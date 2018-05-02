@@ -49,8 +49,7 @@ std::string Cl_file(){
 		std::cout << "the file is very large(>9999)\n";
 		return "";
 	}
-	//std::cout << file << std::endl;
-	std::cout << readB64Content(file) << std::endl;
+	//std::cout << "B64:\n" <<  readB64Content(file) << std::endl;
 	return	fillZeros(filename.size(),4) +	// size of filename(4)
 		"F" +				// F
 		fillZeros(nickname.size(),2) +	// nickname size(2)
@@ -65,7 +64,7 @@ std::string Cl_endConnection(){
 		"E";                // E
 }
 
-void Cl_Download(int SocketFD,int size_msg){
+std::string Cl_Download(int SocketFD,int size_msg){
 	int n;
 	char buffer[5];
 	bzero(buffer,5);
@@ -83,22 +82,24 @@ void Cl_Download(int SocketFD,int size_msg){
 	n=read(SocketFD, buffer, 4);
 	int size_file=atoi(buffer);
 	bzero(buffer,4);
-	char msg_file[size_file];
+	char msg_file[size_file+1];
+	msg_file[size_file]=0;
 	n=read(SocketFD,msg_file,size_file);
 	writeArchiveB64(msg,msg_file);
-	std::cout << othername << " send you: " << msg << std::endl; 
+	return othername + " send you: " + msg;
 }
 
-void Cl_ReadMsg(int SocketFD,int size_msg){
+std::string Cl_ReadMsg(int SocketFD,int size_msg){
 	int n;
 	char msg[size_msg+1];
 	n = read(SocketFD, msg, size_msg);
 	msg[size_msg]=0;
-	printf ("[%s]\n", msg);
+	return std::string(msg);
 }
 
 struct ClientProtocol{
 	std::map<char, pfunc> F;
+	
 	void printMenu(){
 		std::cout << "\n------Menu (action)-----\n"
 		     << "P -> Print list of user on the chat \n"
@@ -125,6 +126,7 @@ struct ClientProtocol{
 			return false;
 		}
 		msg= (*(it->second))();
+		std::cout << msg << std::endl;
 		return true;
 	}
 };

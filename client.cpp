@@ -41,7 +41,9 @@ std::map<std::string, WIN>::iterator it;
 void create_boxs();
 void create_box(string playerName, bool flag);
 void create_bullet(int x, int y, int h);
+void print_message(std::string msg);
 bool playing=false;
+std::string myNickname="";
 
 /**Program Socket********************************************************************/
 
@@ -57,9 +59,8 @@ void Cl_bullet(int SocketFD, int size_msg){
 	int h=atoi(buffer);
 	bzero(buffer,4); //Zeros for the 4 bytes that was reading
 	if(playing){
-	    clear();
+	    //clear();
 	    create_bullet(players[playerName].startx+8,players[playerName].starty-h,h);
-	    refresh();
 	}
 }
 
@@ -72,12 +73,8 @@ void Cl_game(int SocketFD, int size_msg){
 	n = read(SocketFD, msg, size_msg); //reading size_msg bytes
 	msg[size_msg]=0;
 	string playerName(msg);
-	if(!playing)
-		std::cout<<playerName;
 	n = read(SocketFD, buffer,4); //reading 4 bytes
 	string xnum(buffer);
-	if(!playing)
-		std::cout<<xnum;
 	bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
 	while(xnum.size()>1 && xnum[0]=='0'){
 		xnum.erase(xnum.begin());
@@ -85,16 +82,12 @@ void Cl_game(int SocketFD, int size_msg){
 	int x=atoi(xnum.c_str());
 	n = read(SocketFD, buffer,4); //reading 4 bytes
 	string ynum(buffer);
-	if(!playing)
-		std::cout<<ynum;
 	bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
 	while(ynum.size()>1 && ynum[0]=='0'){
 		ynum.erase(ynum.begin());
 	}
 	int y=atoi(ynum.c_str());
 	n = read(SocketFD, buffer,2); //reading 2 bytess 
-	if(!playing)
-		std::cout<<string(buffer) << std::endl;
 	int lives=atoi(buffer);
 	bzero(buffer,2);//Zeros for the 2 bytes that was raeading
 
@@ -116,7 +109,6 @@ void Cl_game(int SocketFD, int size_msg){
 void read2(int SocketFD) {
 	int n;
 	char buffer[5]; //
-	ClientProtocol CP;
 	for (;;){
 		bzero(buffer, 5);
 		do {
@@ -127,25 +119,26 @@ void read2(int SocketFD) {
 				cout << "Server: The connection was interrupted" << endl;
 				return;
 			}
-			if(!playing)
-				std::cout << string(buffer);
 			int size_msg=atoi(buffer);
 			bzero(buffer, 4); // Zeros for the 4 bytes that was reading   
 
 			n = read(SocketFD, buffer, 1); //reading 1 bytes
 			std::string action(buffer);
-			if(!playing)
-				std::cout << action;
 			bzero(buffer, 1); //equal to the before
 
-			if (action == "G"){ // Responsive when is Printing or Chating or error in Login
+			if (action == "G"){ // Responsive when exist movement in Game
 				Cl_game(SocketFD,size_msg);
 			} else if(action=="O"){
 				Cl_bullet(SocketFD,size_msg);
 			} else if(action=="R"){
-				Cl_ReadMsg(SocketFD, size_msg);
+				std::string msg=Cl_ReadMsg(SocketFD, size_msg);
+				print_message(msg);
 			} else if(action=="D"){
-				Cl_Download(SocketFD, size_msg);
+				if(!playing){
+					std::cout << "Downloading" << std::endl;
+				}
+				std::string msg=Cl_Download(SocketFD, size_msg);
+				print_message(msg);
 			}
 
 		} while (n == 0);
@@ -153,19 +146,17 @@ void read2(int SocketFD) {
 }
 
 void write2(int  SocketFD) {
-	ClientProtocol CP;
 	std::string msg , aux = "", op = "";
 	int dif = 0;
-
+	ClientProtocol CP;
 	while (op!="E") {
 		CP.printMenu();
 		std::cin >> op;
 		if(op.size()==1 && CP.getMsg(op[0],msg) && msg!=""){
-			//std::cout << msg << std::endl;
 			int nwrite = write(SocketFD, msg.c_str(), msg.size());
 		} else {
 
-			if (op == "G") { //protocolo for Chat
+			if (op == "G") { //protocolo for Game
 				playing=true;
 				//Start curses mode        
 				initscr(); 
@@ -175,7 +166,7 @@ void write2(int  SocketFD) {
 				// I need that nifty F1 
 				keypad(stdscr, TRUE);           
 				noecho();
-				 // Line buffering disabled, Pass on
+				// Line buffering disabled, Pass on
 				init_pair(1, COLOR_CYAN, COLOR_BLACK);
 				attron(COLOR_PAIR(1));
 				refresh();  
@@ -183,22 +174,20 @@ void write2(int  SocketFD) {
 				std::string movement=std::to_string(int('N'));
 				movement=fillZeros(movement.size(),4)+"G"+movement
 					+fillZeros(LINES,4)+fillZeros(COLS,4);
-				//std::cout << movement << "\n";
 				int nwrite = write(SocketFD, movement.c_str(), movement.size());
 
 				while (1) {
-					int ch = getch();//move_user1(win1);
-					//std::cout << (char)ch << std::endl;
+					int ch = getch();
 					movement=std::to_string(ch) ;
 					movement=fillZeros(movement.size(),4)+"G"+movement;
 					int nwrite = write(SocketFD, movement.c_str(), movement.size());
 					if(ch==KEY_ESC){
+						endwin();
 						playing=false;
 						break;
 					}
 				}
-				endwin();
-				std::cout << "End Game\n" ;
+				print_message("End Game");
 			} else {
 				std::cout << "Error: Action does not work.\n ";
 				continue;
@@ -210,9 +199,19 @@ void write2(int  SocketFD) {
 }
 
 void create_bullet(int x, int y, int h){
-	create_boxs();
 	for (int i=0;i<h;i++){
 		move(y+i,x); addstr("o");
+	}
+	refresh();
+}
+
+void print_message(std::string msg){
+	if(playing){
+		move(0,0);clrtoeol();
+		move(0,0);addstr(msg.c_str());
+		refresh();
+	} else {
+		std::cout << msg << endl;
 	}
 }
 
