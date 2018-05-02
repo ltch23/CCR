@@ -100,9 +100,8 @@ void read2(int ConnectFD){
 					prnt+="(username "+it->first
 					+" : " + std::to_string(it->second) + ") ";
 				}
-				if(login){
-					write2(ConnectFD,prnt,action); 
-				} else {
+				write2(ConnectFD,prnt,action); 
+				if(!login){
 					prnt="no estas logueado";
 					write2(ConnectFD,prnt,action); 
 				}
