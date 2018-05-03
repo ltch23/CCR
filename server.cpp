@@ -238,6 +238,7 @@ void read2(int ConnectFD){
 				sendFile+="D";
 				std::string username = "";
 				find_str(ConnectFD,username); //username has nickname who send to mssg 
+				bzero(buffer,5);
 
 				n = read(ConnectFD, buffer, 2); //reading a size of the other client
 				int size_othername=atoi(buffer);
@@ -254,6 +255,7 @@ void read2(int ConnectFD){
 				n = read(ConnectFD, buffer, 4);
 				std::string str_size_file(buffer);
 				int size_file=atoi(buffer);
+				std::cout << size_file << std::endl;
 				bzero(buffer,4);
 				char msg_file[size_file+1];
 				msg_file[size_file]=0;
@@ -269,6 +271,7 @@ void read2(int ConnectFD){
 				if(login){
 					write2(otherConnectFD, sendFile+std::string(msg_file), "D");
 				} else {
+					std::cout << action << std::endl;
 					sendFile="Error: You arent login\n";
 					write2(ConnectFD, sendFile, "C");
 				}

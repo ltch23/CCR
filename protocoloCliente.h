@@ -16,7 +16,7 @@ std::string Cl_login(){
 	    // this_user=nickname;
 }
 
-std::string Cl_chat(){//MENSAJES SIN SALTOS DE LINEA
+std::string Cl_chat(){
 	std::string nickname="";
 	std::cout<<"enter nickname to chat: ";
 	std::cin.ignore();
@@ -85,7 +85,7 @@ std::string Cl_Download(int SocketFD,int size_msg){
 	char msg_file[size_file+1];
 	msg_file[size_file]=0;
 	n=read(SocketFD,msg_file,size_file);
-	writeArchiveB64(msg,msg_file);
+	writeArchiveB64(msg,std::string(msg_file));
 	return othername + " send you: " + msg;
 }
 

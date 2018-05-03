@@ -101,9 +101,9 @@ std::string readB64Content(std::string &b64){
 	return msg;
 }
 
-void writeArchiveB64(std::string &filename, const char* msg_file){
+void writeArchiveB64(std::string &filename, std::string msg_file){
 	FILE *newFile=fopen(filename.c_str(),"w");
-	std::string b64(msg_file);
+	std::string b64=msg_file;
 	std::string content=readB64Content(b64);
 	for (int i=0;i<content.size();i++){
 		fprintf(newFile, "%c", content[i]);

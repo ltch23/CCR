@@ -268,7 +268,7 @@ int main(){
 	int port;
 	cout << "Port: ";
 	cin >> port;
-	MainConnection MC("172.20.10.4",port);
+	MainConnection MC("192.168.8.108",port);
 	ClientServerModel CSM(&MC);
 	CSM.run(read2,write2);
 	return 0;
