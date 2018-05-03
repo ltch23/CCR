@@ -59,7 +59,7 @@ std::string protocoloGame(std::string affect){
 }
 
 void read2(int ConnectFD){
-	char buffer[5];
+	char buffer[250];
 	int n;
 	bool login=false;
 
@@ -107,9 +107,10 @@ void read2(int ConnectFD){
 				}
 
 			} else if (action == "L"){//protocolo for Login
-				
-				n = read(ConnectFD, buffer, size_txt);
-				if(find_nick(std::string(buffer)) == true){ // find  a new nickname is equal to other already exists
+				char newNickName[size_txt];	
+				newNickName[size_txt]=0;
+				n = read(ConnectFD, newNickName, size_txt);
+				if(find_nick(std::string(newNickName)) == true){ // find  a new nickname is equal to other already exists
 					std::string err="nickname already exists, enter other";
 					write2(ConnectFD,err,action);
 					continue;
@@ -117,8 +118,8 @@ void read2(int ConnectFD){
 				if(!login){
 					login=true;
 
-					clients[buffer] = ConnectFD; //adding a newclient
-					std::cout << "Login: " << buffer << std::endl;
+					clients[newNickName] = ConnectFD; //adding a newclient
+					std::cout << "Login: " << newNickName << std::endl;
 					for (Game.it = Game.players.begin(); Game.it != Game.players.end(); Game.it++){
 						std::string msg=protocoloGame(Game.it->first);
 						int nwrite= write2(ConnectFD, msg.c_str(),"G");
